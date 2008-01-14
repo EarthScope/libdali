@@ -38,6 +38,9 @@ extern "C" {
 #define MAXREGEX            8192     /* Maximum regular expression size */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
 
+/* Define a maximium stream ID string length */
+#define MAXSTREAMID 60
+
 /* Return values for dl_collect() and dl_collect_nb() */
 #define DLPACKET    1
 #define DLTERMINATE 0
@@ -170,9 +173,9 @@ extern int    dl_recvresp (DLCP * dlconn, void *buffer, size_t maxbytes,
 /* timeutils.c */
 extern int    dl_doy2md (int year, int jday, int *month, int *mday);
 extern int    dl_md2doy (int year, int month, int mday, int *jday);
-extern char  *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, flag subseconds);
-extern char  *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, flag subseconds);
-extern char  *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, flag subseconds);
+extern char  *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds);
+extern char  *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds);
+extern char  *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds);
 extern dltime_t dl_time2dltime (int year, int day, int hour, int min, int sec, int usec);
 extern dltime_t dl_seedtimestr2dltime (char *seedtimestr);
 extern dltime_t dl_timestr2dltime (char *timestr);
