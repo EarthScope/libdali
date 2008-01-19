@@ -531,59 +531,55 @@ dl_senddata (DLCP * dlconn, void *buffer, size_t buflen,
 /***************************************************************************
  * dl_recvdata:
  *
- * recv() 'maxbytes' data from 'dlconn->link' into a specified
- * 'buffer'.  'ident' is a string to be included in error messages for
- * identification, usually the address of the remote server.
+ * recv() 'maxlen' bytes from 'dlconn->link' into a specified
+ * 'buffer'.
  *
  * Returns -1 on error/EOF, 0 for no available data and the number
  * of bytes read on success.
  ***************************************************************************/
 int
-dl_recvdata (DLCP * dlconn, void *buffer, size_t maxbytes,
-	     const char *ident)
+dl_recvdata (DLCP * dlconn, void *buffer, size_t maxlen)
 {
   int bytesread = 0;
   
-  if ( buffer == NULL )
+  if ( ! buffer )
     {
       return -1;
     }
   
   bytesread = recv (dlconn->link, buffer, maxbytes, 0);
   
-  if ( bytesread == 0 )		/* should indicate TCP FIN or EOF */
+  /* TCP FIN or EOF - shutdown from peer */
+  if ( bytesread == 0 )		
     {
       dl_log_r (dlconn, 1, 1, "[%s] recv():%d TCP FIN or EOF received\n",
-		ident, bytesread);
+		dlconn->addr, bytesread);
       return -1;
     }
+  /* Error with recv() */
   else if ( bytesread < 0 )
     {
       if ( slp_noblockcheck() )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n", ident, bytesread,
-		    slp_strerror ());
+	  dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
+		    dlconn->addr, bytesread, slp_strerror ());
 	  return -1;
 	}
-
-      /* no data available for NONBLOCKing IO */
+      
+      /* No data available for NONBLOCKing IO */
       return 0;
     }
-
+  
   return bytesread;
 }  /* End of dl_recvdata() */
 
 
 /***************************************************************************
- * dl_recvresp:
+ * dl_recvheader:
  *
- * To receive a response to a command recv() one byte at a time until
- * '\r\n' or up to 'maxbytes' is read from 'dlconn->link' into a
- * specified 'buffer'.  The function will wait up to 30 seconds for a
- * response to be recv'd.  'command' is a string to be included in
- * error messages indicating which command the response is
- * for. 'ident' is a string to be included in error messages for
- * identification, usually the address of the remote server.
+ * Receive a DataLink packet header composed of two sequence bytes
+ * ("DL"), followed a packet data length byte, followed by a header
+ * payload.
  *
  * It should not be assumed that the populated buffer contains a
  * terminated string.
@@ -591,70 +587,60 @@ dl_recvdata (DLCP * dlconn, void *buffer, size_t maxbytes,
  * Returns -1 on error/EOF and the number of bytes read on success.
  ***************************************************************************/
 int
-dl_recvresp (DLCP * dlconn, void *buffer, size_t maxbytes,
-	     const char *command, const char *ident)
+dl_recvheader (DLCP *dlconn, void *buffer, size_t maxlen)
 {
+  int bytesread = 0;
+  int headerlen;
   
-  int bytesread = 0;		/* total bytes read */
-  int recvret   = 0;            /* return from dl_recvdata */
-  int ackcnt    = 0;		/* counter for the read loop */
-  int ackpoll   = 50000;	/* poll at 0.05 seconds for reading */
-  
-  if ( buffer == NULL )
+  if ( ! buffer )
     {
       return -1;
     }
   
-  /* Clear the receiving buffer */
-  memset (buffer, 0, maxbytes);
-  
-  /* Recv a byte at a time and wait up to 30 seconds for a response */
-  while ( bytesread < maxbytes )
+  if ( maxlen < 255 )
     {
-      recvret = dl_recvdata (dlconn, (char *)buffer + bytesread, 1, ident);
-      
-      /* Trap door for termination */
-      if ( dlconn->terminate )
-	{
-	  return -1;
-	}
-      
-      if ( recvret > 0 )
-	{
-	  bytesread += recvret;
-	}
-      else if ( recvret < 0 )
-	{
-	  dl_log_r (dlconn, 2, 0, "[%s] bad response to '%.*s'\n",
-		    ident, strcspn ((char *) command, "\r\n"),
-		    (char *) command);
-	  return -1;
-	}
-      
-      /* Trap door if '\r\n' is recv'd */
-      if ( bytesread >= 2 &&
-	   *(char *)((char *)buffer + bytesread - 2) == '\r' &&
-	   *(char *)((char *)buffer + bytesread - 1) == '\n' )
-	{
-	  return bytesread;
-	}
-      
-      /* Trap door if 30 seconds has elapsed, (ackpoll x 600) */
-      if ( ackcnt > 600 )
-        {
-	  dl_log_r (dlconn, 2, 0, "[%s] timeout waiting for response to '%.*s'\n",
-		    ident, strcspn ((char *) command, "\r\n"),
-		    (char *) command);
-	  return -1;
-	}
-      
-      /* Delay if no data received */
-      if ( recvret == 0 )
-	{
-	  slp_usleep (ackpoll);
-	  ackcnt++;
-	}
+      return -1;
+    }
+  
+  /* Receive synchronization bytes and header length */
+  if ( (bytesread = sl_recvdata (buffer, buffer, 3)) != 3 )
+    {
+      return -1;
+    }
+  
+  /* Test synchronization bytes */
+  if ( buffer[0] != 'R' || buffer[1] != 'S' )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] No DataLink packet detected\n",
+		dlconn->addr);
+      return -1;
+    }
+  
+  /* 3rd byte is the header length */
+  headerlen = (unt8_t) buffer[2];
+  
+  CHAD, need to loop over receive here for potentially fragmented packets...
+
+
+  if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen)) )
+  
+  /* Trap door for termination */
+  if ( dlconn->terminate )
+    {
+      return -1;
+    }
+  
+  if ( recvret > 0 )
+    {
+      bytesread += recvret;
+    }
+  else if ( recvret < 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] bad response to '%.*s'\n",
+		ident, strcspn ((char *) command, "\r\n"),
+		(char *) command);
+      return -1;
     }
   
   return bytesread;
-}  /* End of dl_recvresp() */
+}  /* End of dl_recvheader() */

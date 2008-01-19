@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.014
+ * modified: 2008.017
  ***************************************************************************/
 
 
@@ -105,7 +105,7 @@ typedef struct DLLog_s
 /* DataLink connection parameters */
 typedef struct DLCP_s
 {
-  char       *sladdr;           /* The host:port of DataLink server */
+  char       *addr;             /* The host:port of DataLink server */
   char       *begin_time;	/* Beginning of requested time window */
   char       *end_time;		/* End of requested time window */
   
