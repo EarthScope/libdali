@@ -15,14 +15,14 @@
 
 #include "libdali.h"
 
-void dl_loginit_main (DLlog * logp, int verbosity,
+void dl_loginit_main (DLLog * logp, int verbosity,
 		      void (*log_print)(const char*), const char * logprefix,
 		      void (*diag_print)(const char*), const char * errprefix);
 
-int dl_log_main (DLlog * logp, int level, int verb, va_list * varlist);
+int dl_log_main (DLLog * logp, int level, int verb, va_list * varlist);
 
 /* Initialize the global logging parameters */
-DLlog gDLlog = {NULL, NULL, NULL, NULL, 0};
+DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
 
 
 /***************************************************************************
@@ -37,7 +37,7 @@ dl_loginit (int verbosity,
 	    void (*log_print)(const char*), const char * logprefix,
 	    void (*diag_print)(const char*), const char * errprefix)
 {
-  dl_loginit_main(&gDLlog, verbosity, log_print, logprefix, diag_print, errprefix);
+  dl_loginit_main(&gDLLog, verbosity, log_print, logprefix, diag_print, errprefix);
 }  /* End of dl_loginit() */
 
 
@@ -60,7 +60,7 @@ dl_loginit_r (DLCP * dlconn, int verbosity,
 
   if ( dlconn->log == NULL )
     {
-      dlconn->log = (DLlog *) malloc (sizeof(DLlog));
+      dlconn->log = (DLLog *) malloc (sizeof(DLLog));
 
       dlconn->log->log_print = NULL;
       dlconn->log->logprefix = NULL;
@@ -76,24 +76,24 @@ dl_loginit_r (DLCP * dlconn, int verbosity,
 /***************************************************************************
  * dl_loginit_rl:
  *
- * Initialize DLlog specific logging parameters.  If the logging parameters
+ * Initialize DLLog specific logging parameters.  If the logging parameters
  * have not been initialized (log == NULL) new parameter space will
  * be allocated.
  *
  * See dl_loginit_main() description for usage.
  *
- * Returns a pointer to the created/re-initialized DLlog struct.
+ * Returns a pointer to the created/re-initialized DLLog struct.
  ***************************************************************************/
-DLlog *
-dl_loginit_rl (DLlog * log, int verbosity,
+DLLog *
+dl_loginit_rl (DLLog * log, int verbosity,
 	       void (*log_print)(const char*), const char * logprefix,
 	       void (*diag_print)(const char*), const char * errprefix)
 {
-  DLlog *logp;
+  DLLog *logp;
 
   if ( log == NULL )
     {
-      logp = (DLlog *) malloc (sizeof(DLlog));
+      logp = (DLLog *) malloc (sizeof(DLLog));
 
       logp->log_print = NULL;
       logp->logprefix = NULL;
@@ -118,7 +118,7 @@ dl_loginit_rl (DLlog * log, int verbosity,
  * Initialize the logging subsystem.  Given values determine how dl_log()
  * and dl_log_r() emit messages.
  *
- * This function modifies the logging parameters in the passed DLlog.
+ * This function modifies the logging parameters in the passed DLLog.
  *
  * Any log/error printing functions indicated must except a single
  * argument, namely a string (const char *).  The dl_log() and
@@ -135,7 +135,7 @@ dl_loginit_rl (DLlog * log, int verbosity,
  * Example: dl_loginit_main (0, (void*)&printf, NULL, (void*)&printf, "error: ");
  ***************************************************************************/
 void
-dl_loginit_main (DLlog * logp, int verbosity,
+dl_loginit_main (DLLog * logp, int verbosity,
 		 void (*log_print)(const char*), const char * logprefix,
 		 void (*diag_print)(const char*), const char * errprefix)
 {
@@ -193,7 +193,7 @@ dl_log (int level, int verb, ...)
   
   va_start (varlist, verb);
 
-  retval = dl_log_main (&gDLlog, level, verb, &varlist);
+  retval = dl_log_main (&gDLLog, level, verb, &varlist);
 
   va_end (varlist);
 
@@ -215,12 +215,12 @@ dl_log_r (const DLCP * dlconn, int level, int verb, ...)
 {
   int retval;
   va_list varlist;
-  DLlog *logp;
+  DLLog *logp;
 
   if ( ! dlconn )
-    logp = &gDLlog;
+    logp = &gDLLog;
   else if ( ! dlconn->log )
-    logp = &gDLlog;
+    logp = &gDLLog;
   else
     logp = dlconn->log;
   
@@ -238,20 +238,20 @@ dl_log_r (const DLCP * dlconn, int level, int verb, ...)
  * dl_log_rl:
  *
  * A wrapper to dl_log_main() that uses the logging parameters in a
- * supplied DLlog.  If the supplied pointer is NULL the global logging
+ * supplied DLLog.  If the supplied pointer is NULL the global logging
  * parameters will be used.
  *
  * See dl_log_main() description for return values.
  ***************************************************************************/
 int
-dl_log_rl (DLlog * log, int level, int verb, ...)
+dl_log_rl (DLLog * log, int level, int verb, ...)
 {
   int retval;
   va_list varlist;
-  DLlog *logp;
+  DLLog *logp;
 
   if ( ! log )
-    logp = &gDLlog;
+    logp = &gDLLog;
   else
     logp = log;
   
@@ -274,7 +274,7 @@ dl_log_rl (DLlog * log, int level, int verb, ...)
  * libdali functions.
  *
  * The function uses logging parameters specified in the supplied
- * DLlog.
+ * DLLog.
  * 
  * This function expects 3+ arguments, message level, verbosity level,
  * fprintf format, and fprintf arguments.  If the verbosity level is
@@ -303,7 +303,7 @@ dl_log_rl (DLlog * log, int level, int verb, ...)
  * a negative value on error.
  ***************************************************************************/
 int
-dl_log_main (DLlog * logp, int level, int verb, va_list * varlist)
+dl_log_main (DLLog * logp, int level, int verb, va_list * varlist)
 {
   static char message[MAX_LOG_MSG_LENGTH];
   int retvalue = 0;
