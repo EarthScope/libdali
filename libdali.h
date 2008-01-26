@@ -161,9 +161,8 @@ extern int    dl_configlink (DLCP * dlconn);
 extern int    dl_send_info (DLCP * dlconn, const char * info_level,
 			    int verbose);
 extern int    dl_connect (DLCP * dlconn, int sayhello);
-extern int    dl_disconnect (DLCP * dlconn);
+extern void   dl_disconnect (DLCP * dlconn);
 extern int    dl_ping (DLCP * dlconn, char *serverid, char *site);
-extern int    dl_checksock (int sock, int tosec, int tousec);
 extern int    dl_senddata (DLCP * dlconn, void *buffer, size_t buflen,
 			   const char *ident, void *resp, int resplen);
 extern int    dl_recvdata (DLCP * dlconn, void *buffer, size_t maxbytes,

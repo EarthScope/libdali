@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.012
+ * modified: 2008.025
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -100,6 +100,36 @@ dlp_sockclose (int sock)
   return close (sock);
 #endif
 }  /* End of dlp_sockclose() */
+
+
+/***************************************************************************
+ * dlp_sockblock:
+ *
+ * Set a network socket to blocking.
+ *
+ * Returns -1 on errors and 0 on success.
+ ***************************************************************************/
+int
+dlp_sockblock (int sock)
+{
+#if defined(DLP_WIN32)
+  u_long flag = 0;
+  
+  if (ioctlsocket(sock, FIONBIO, &flag) == -1)
+    return -1;
+  
+#else
+  int flags = fcntl(sock, F_GETFL, 0);
+  
+  flags &= (~O_NONBLOCK);
+  
+  if (fcntl(sock, F_SETFL, flags) == -1)
+    return -1;
+
+#endif
+
+  return 0;
+}  /* End of dlp_sockblock() */
 
 
 /***************************************************************************
