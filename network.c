@@ -7,21 +7,14 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.025
+ * Version: 2008.027
  ***************************************************************************/
-
-CHAD, still need processing:
-  dl_sayhello() :: should be dl_getID()?
-  dl_ping()
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "libdali.h"
-
-/* Functions only used in this source file */
-int dl_sayhello (DLCP * dlconn);
 
 
 /***************************************************************************
@@ -129,26 +122,19 @@ dl_connect (DLCP * dlconn)
       return -1;
     }
   
-  if ( ! dlconn->terminate )
-    { /* socket connected */
-      dl_log_r (dlconn, 1, 1, "[%s] network socket opened\n", dlconn->addr);
-      
-      dlconn->link = sock;
-      
-      /* Everything should be connected, say hello if requested */
-      if ( sayhello )
-	{
-	  if (dl_sayhello (dlconn) == -1)
-	    {
-	      slp_sockclose (sock);
-	      return -1;
-	    }
-	}
-      
-      return sock;
+  /* socket connected */
+  dl_log_r (dlconn, 1, 1, "[%s] network socket opened\n", dlconn->addr);
+  
+  dlconn->link = sock;
+  
+  /* Everything should be connected, exchange IDs */
+  if ( dl_exchangeID (dlconn) == -1 )
+    {
+      slp_sockclose (sock);
+      return -1;
     }
   
-  return -1;
+  return sock;
 }  /* End of dl_connect() */
 
 
@@ -172,72 +158,53 @@ dl_disconnect (DLCP * dlconn)
 
 
 /***************************************************************************
- * dl_sayhello:
+ * dl_exchangeID:
  *
- * Send the HELLO command and attempt to parse the server version
- * number from the returned string.  The server version is set to 0.0
- * if it can not be parsed from the returned string, which indicates
- * unkown protocol functionality.
+ * Send the ID command including the client ID and parse the
+ * capability flags from the returned string.
  *
  * Returns -1 on errors, 0 on success.
  ***************************************************************************/
 int
-dl_sayhello (DLCP * dlconn)
+dl_exchangeID (DLCP * dlconn)
 {
   int ret = 0;
   int servcnt = 0;
   int sitecnt = 0;
-  char sendstr[100];		/* A buffer for command strings */
-  char servstr[200];		/* The remote server ident */
-  char sitestr[100];		/* The site/data center ident */
-  char servid[100];		/* Server ID string, i.e. 'Datalink' */
+  char sendstr[255];		/* Buffer for command strings */
+  char recvstr[255];		/* Buffer for server response */
   char *capptr;                 /* Pointer to capabilities flags */  
   char capflag = 0;             /* Capabilities are supported by server */
-
-  /* Send HELLO */
-  sprintf (sendstr, "HELLO\r");
+  
+  /* Send ID command including client ID */
+  sprintf (sendstr, "ID %s", dlconn->clientid);
   dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
-  dl_senddata (dlconn, (void *) sendstr, strlen (sendstr), dlconn->addr,
-	       NULL, 0);
   
-  /* Recv the two lines of response: server ID and site installation ID */
-  if ( dl_recvresp (dlconn, (void *) servstr, (size_t) sizeof (servstr),
-		    sendstr, dlconn->addr) < 0 )
+  if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
+		      recvstr, sizeof(recvstr)) < 0 )
     {
       return -1;
     }
   
-  if ( dl_recvresp (dlconn, (void *) sitestr, (size_t) sizeof (sitestr),
-		    sendstr, dlconn->addr) < 0 )
+  /* Verify DataLink signature in server response */
+  if ( strncasecmp (recvstr, "DATALINK", 8) )
     {
+      dl_log_r (dlconn, 1, 1,
+                "[%s] unrecognized server ID: %8.8s\n",
+                dlconn->addr, recvstr);
       return -1;
     }
-  
-  /* Terminate on first "\r" character or at one character before end of buffer */
-  servcnt = strcspn (servstr, "\r");
-  if ( servcnt > (sizeof(servstr)-2) )
-    {
-      servcnt = (sizeof(servstr)-2);
-    }
-  servstr[servcnt] = '\0';
-  
-  sitecnt = strcspn (sitestr, "\r");
-  if ( sitecnt > (sizeof(sitestr)-2) )
-    {
-      sitecnt = (sizeof(sitestr)-2);
-    }
-  sitestr[sitecnt] = '\0';
   
   /* Search for capabilities flags in server ID by looking for "::"
    * The expected format of the complete server ID is:
-   * "datalink v#.# <optional text> <:: optional capability flags>"
+   * "DataLink <optional text> <:: optional capability flags>"
    */
-  capptr = strstr (servstr, "::");
+  capptr = strstr (recvstr, "::");
   if ( capptr )
     {
       /* Truncate server ID portion of string */
       *capptr = '\0';
-
+      
       /* Move pointer to beginning of flags */
       capptr += 2;
       
@@ -246,205 +213,43 @@ dl_sayhello (DLCP * dlconn)
 	capptr++;
     }
   
-  /* Report received IDs */
-  dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, servstr);
+  /* Report received server ID */
+  dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, recvstr);
   if ( capptr )
     dl_log_r (dlconn, 1, 1, "[%s] capabilities: %s\n", dlconn->addr, capptr);
-  dl_log_r (dlconn, 1, 1, "[%s] organization: %s\n", dlconn->addr, sitestr);
-  
-  /* Parse old-school server ID and version from the returned string.
-   * The expected format at this point is:
-   * "datalink v#.# <optional text>"
-   * where 'datalink' is case insensitive and '#.#' is the server/protocol version.
-   */
-  /* Add a space to the end to allowing parsing when the optionals are not present */
-  servstr[servcnt] = ' '; servstr[servcnt+1] = '\0';
-  ret = sscanf (servstr, "%s v%f ", &servid[0], &dlconn->protocol_ver);
-  
-  if ( ret != 2 || strncasecmp (servid, "DATALINK", 8) )
-    {
-      dl_log_r (dlconn, 1, 1,
-                "[%s] unrecognized server version, assuming minimum functionality\n",
-                dlconn->addr);
-      dlconn->protocol_ver = 0.0;
-    }
   
   /* Check capabilities flags */
   if ( capptr )
     {
       char *tptr;
       
-      /* Parse protocol version flag: "SLPROTO:<#.#>" if present */
-      if ( (tptr = strstr(capptr, "SLPROTO")) )
+      /* Parse protocol version flag: "DLPROTO:<#.#>" if present */
+      if ( (tptr = strstr(capptr, "DLPROTO")) )
 	{
 	  /* This protocol specification overrides that from earlier in the server ID */
-	  ret = sscanf (tptr, "SLPROTO:%f", &dlconn->protocol_ver);
+	  ret = sscanf (tptr, "DLPROTO:%f", &dlconn->serverproto);
 	  
 	  if ( ret != 1 )
 	    dl_log_r (dlconn, 1, 1,
-		      "[%s] could not parse protocol version from SLPROTO flag: %s\n",
+		      "[%s] could not parse protocol version from DLPROTO flag: %s\n",
 		      dlconn->addr, tptr);
 	}
-      
-      /* Check for CAPABILITIES command support */
-      if ( strstr(capptr, "CAP") )
-	capflag = 1;
-    }
-  
-  /* Send CAPABILITIES flags if supported by server */
-  if ( capflag )
-    {
-      int bytesread = 0;
-      char readbuf[100];
-      
-      char *term1, *term2;
-      char *extreply = 0;
-      
-      /* Current capabilities:
-       *   SLPROTO:3.0 = Datalink protocol version 3.0
-       *   CAP         = CAPABILITIES command support
-       *   EXTREPLY    = Extended reply message handling
-       *   NSWILDCARD  = Network and station code wildcard support
-       */
-      sprintf (sendstr, "CAPABILITIES SLPROTO:3.0 CAP EXTREPLY NSWILDCARD\r");
-      
-      /* Send CAPABILITIES and recv response */
-      dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
-      bytesread = dl_senddata (dlconn, (void *) sendstr, strlen (sendstr), dlconn->addr,
-			       readbuf, sizeof (readbuf));
-      
-      if ( bytesread < 0 )
-	{		/* Error from dl_senddata() */
-	  return -1;
-	}
-      
-      /* Search for 2nd "\r" indicating extended reply message present */
-      extreply = 0;
-      if ( (term1 = memchr (readbuf, '\r', bytesread)) )
-	{
-	  if ( (term2 = memchr (term1+1, '\r', bytesread-(readbuf-term1)-1)) )
-	    {
-	      *term2 = '\0';
-	      extreply = term1+1;
-	    }
-	}
-      
-      /* Check response to CAPABILITIES */
-      if (!strncmp (readbuf, "OK\r", 3) && bytesread >= 4)
-	{
-	  dl_log_r (dlconn, 1, 2, "[%s] capabilities OK %s%s%s\n", dlconn->addr,
-		    (extreply)?"{":"", (extreply)?extreply:"", (extreply)?"}":"");
-	}
-      else if (!strncmp (readbuf, "ERROR\r", 6) && bytesread >= 7)
-	{
-	  dl_log_r (dlconn, 1, 2, "[%s] CAPABILITIES not accepted %s%s%s\n", dlconn->addr,
-		    (extreply)?"{":"", (extreply)?extreply:"", (extreply)?"}":"");	  
-	  return -1;
-	}
-      else
-	{
-	  dl_log_r (dlconn, 2, 0,
-		    "[%s] invalid response to CAPABILITIES command: %.*s\n",
-		    dlconn->addr, bytesread, readbuf);
-	  return -1;
-	}
     }
   
   return 0;
-}  /* End of dl_sayhello() */
-
-
-/***************************************************************************
- * dl_ping:
- *
- * Connect to a server, issue the HELLO command, parse out the server
- * ID and organization resonse and disconnect.  The server ID and
- * site/organization strings are copied into serverid and site strings
- * which should have 100 characters of space each.
- *
- * Returns:
- *   0  Success
- *  -1  Connection opened but invalid response to 'HELLO'.
- *  -2  Could not open network connection
- ***************************************************************************/
-int
-dl_ping (DLCP * dlconn, char *serverid, char *site)
-{
-  int servcnt = 0;
-  int sitecnt = 0;
-  char sendstr[100];		/* A buffer for command strings */
-  char servstr[100];		/* The remote server ident */
-  char sitestr[100];		/* The site/data center ident */
-  
-  /* Open network connection to server */
-  if ( dl_connect (dlconn, 0) == -1 )
-    {
-      dl_log_r (dlconn, 2, 1, "Could not connect to server\n");
-      return -2;
-    }
-  
-  /* Send HELLO */
-  sprintf (sendstr, "HELLO\r");
-  dl_log_r (dlconn, 1, 2, "[%s] sending: HELLO\n", dlconn->addr);
-  dl_senddata (dlconn, (void *) sendstr, strlen (sendstr), dlconn->addr,
-	       NULL, 0);
-  
-  /* Recv the two lines of response */
-  if ( dl_recvresp (dlconn, (void *) servstr, (size_t) sizeof (servstr), 
-		    sendstr, dlconn->addr) < 0 )
-    {
-      return -1;
-    }
-  
-  if ( dl_recvresp (dlconn, (void *) sitestr, (size_t) sizeof (sitestr),
-		    sendstr, dlconn->addr) < 0 )
-    {
-      return -1;
-    }
-  
-  servcnt = strcspn (servstr, "\r");
-  if ( servcnt > 90 )
-    {
-      servcnt = 90;
-    }
-  servstr[servcnt] = '\0';
-  
-  sitecnt = strcspn (sitestr, "\r");
-  if ( sitecnt > 90 )
-    {
-      sitecnt = 90;
-    }
-  sitestr[sitecnt] = '\0';
-  
-  /* Copy the response strings into the supplied strings */
-  strncpy (serverid, servstr, sizeof(servstr));
-  strncpy (site, sitestr, sizeof(sitestr));
-  
-  dl_disconnect (dlconn);
-  
-  return 0;
-}  /* End of dl_ping() */
+}  /* End of dl_exchangeID() */
 
 
 /***************************************************************************
  * dl_senddata:
  *
- * send() 'buflen' bytes from 'buffer' to 'dlconn->link'.  'ident' is
- * a string to include in error messages for identification, usually
- * the address of the remote server.  If 'resp' is not NULL then read
- * up to 'resplen' bytes into 'resp' after sending 'buffer'.  This is
- * only designed for small pieces of data, specifically the server
- * acknowledgement to a command.
+ * send() 'sendlen' bytes from 'buffer' to 'dlconn->link'.
  *
- * Returns -1 on error, and size (in bytes) of the response
- * received (0 if 'resp' == NULL).
+ * Returns 0 on success and -1 on error.
  ***************************************************************************/
 int
-dl_senddata (DLCP *dlconn, void *buffer, size_t buflen,
-	     void *resp, int resplen)
+dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
 {
-  int bytesread = 0;		/* bytes read into resp */
-  
   /* Set socket to blocking */
   if ( dlp_sockblock (dlconn->link) )
     {
@@ -454,7 +259,7 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t buflen,
     }
   
   /* Send data */
-  if ( send (dlconn->link, buffer, buflen, 0) < 0 )
+  if ( send (dlconn->link, buffer, sendlen, 0) < 0 )
     {
       dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
       return -1;
@@ -468,17 +273,88 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t buflen,
       return -1;
     }
   
-  /* If requested collect the response */
+  return 0;
+}  /* End of dl_senddata() */
+
+
+/***************************************************************************
+ * dl_sendpacket:
+ *
+ * Send a DataLink packet created by combining 'headerbuf' with
+ * 'packetbuf' to 'dlconn->link'.  A 3-byte pre-header composed of 2
+ * synchronization bytes of 'DL' followed by an 8-byte unsigned
+ * integer that is the length of the payload will be created and
+ * prepended to the packet.
+ *
+ * The header length must be larger than 0 but the packet length can
+ * be 0 resulting in a header-only packet commonly used for sendind
+ * commands.
+ *
+ * If 'resp' is not NULL then read up to 'resplen' bytes into 'resp'
+ * after sending 'buffer' using dl_recvheader().  This is only
+ * designed for small pieces of data, specifically the server
+ * acknowledgement to a command which are a packet header only.
+ *
+ * Returns -1 on error, and size (in bytes) of the response
+ * received (0 if 'resp' == NULL).
+ ***************************************************************************/
+int
+dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
+	       void *packetbuf, size_t packetlen,
+	       void *resp, int resplen)
+{
+  int bytesread = 0;		/* bytes read into resp */
+  char wirepacket[MAXPACKETSIZE+3];
+  
+  if ( !dlconn || ! headerbuf )
+    return -1;
+  
+  /* Sanity check that the header is not too large or zero */
+  if ( headerlen > 255 || headerlen == 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] packet header size is invalid: %d\n",
+		dlconn->addr, headerlen);
+      return -1;
+    }
+  
+  /* Sanity check that the header + packet data is not too large */
+  if ( (headerlen + packetlen) > MAXPACKETSIZE )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] packet is too large (%d), max is %d\n",
+		dlconn->addr, (headerlen + packetlen), MAXPACKETSIZE);
+      return -1;
+    }
+  
+  /* Set the synchronization and header size bytes */
+  wirepacket[0] = 'D';
+  wirepacket[1] = 'L';
+  wirepacket[2] = (uint8_t) headerlen;
+  
+  /* Copy header and packet data into the wire packet */
+  memcpy (wirepacket+3, headerbuf, headerlen);
+  
+  if ( packetbuf && packetlen > 0 )
+    memcpy (wirepacket+3+headerlen, packetbuf, packetlen);
+  
+  /* Send data */
+  if ( dl_senddata (dlconn, wirepacket, (3+headerlen+packetlen)) < 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
+      return -1;
+    }
+  
+  /* If requested collect the response (packet header only) */
   if ( resp != NULL )
     {
-      /* Clear response buffer */
-      memset (resp, 0, resplen);
-      
-      bytesread = dl_recvheader (dlconn, resp, resplen);
+      if ( (bytesread = dl_recvheader (dlconn, resp, resplen)) < 0 )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] error receving data\n", dlconn->addr);
+	  return -1;
+	}
     }
   
   return bytesread;
-}  /* End of dl_senddata() */
+}  /* End of dl_sendpacket() */
 
 
 /***************************************************************************
@@ -511,7 +387,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
 	  if ( slp_noblockcheck() )
 	    {
 	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
-			dlconn->addr, bytesread, dlp_strerror ());
+			dlconn->addr, nrecv, dlp_strerror ());
 	      return -2;
 	    }
         }
@@ -550,6 +426,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
 {
   int bytesread = 0;
   int headerlen;
+  char *cbuffer = buffer;
   
   if ( ! buffer )
     {
@@ -568,7 +445,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
     }
   
   /* Test synchronization bytes */
-  if ( buffer[0] != 'R' || buffer[1] != 'S' )
+  if ( cbuffer[0] != 'D' || cbuffer[1] != 'L' )
     {
       dl_log_r (dlconn, 2, 0, "[%s] No DataLink packet detected\n",
 		dlconn->addr);
@@ -576,7 +453,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
     }
   
   /* 3rd byte is the header length */
-  headerlen = (unt8_t) buffer[2];
+  headerlen = (uint8_t) cbuffer[2];
   
   /* Receive header payload */
   if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen)) != headerlen )

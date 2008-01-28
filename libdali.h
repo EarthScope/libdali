@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.017
+ * modified: 2008.026
  ***************************************************************************/
 
 
@@ -32,10 +32,9 @@ extern "C" {
 #include "portable.h"
 
 #define LIBDALI_VERSION "1.0"
-#define LIBDALI_RELEASE "2008.013"
+#define LIBDALI_RELEASE "2008.026"
 
-#define RECVBUFSIZE         8192     /* Size of receiving buffer */
-#define MAXREGEX            8192     /* Maximum regular expression size */
+#define MAXPACKETLEN        16384    /* Maximum packet size */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
 
 /* Define a maximium stream ID string length */
@@ -65,10 +64,9 @@ typedef int64_t dltime_t;
 /* Persistent connection state information */
 typedef struct DLStat_s
 {
-  char    databuf[RECVBUFSIZE]; /* Data buffer for received packets */
+  char    databuf[MAXPACKETSIZE]; /* Data buffer for received packets */
   int     recptr;               /* Receive pointer for databuf */
   int     sendptr;              /* Send pointer for databuf */
-  int8_t  expect_info;          /* Do we expect an INFO response? */
 
   int8_t  netto_trig;           /* Network timeout trigger */
   int8_t  netdly_trig;          /* Network re-connect delay trigger */
@@ -106,6 +104,7 @@ typedef struct DLLog_s
 typedef struct DLCP_s
 {
   char       *addr;             /* The host:port of DataLink server */
+  char       *clientid;         /* Client program ID*/
   char       *begin_time;	/* Beginning of requested time window */
   char       *end_time;		/* End of requested time window */
   
@@ -119,7 +118,7 @@ typedef struct DLCP_s
   int         netto;            /* Network timeout (secs) */
   int         netdly;           /* Network reconnect delay (secs) */
 
-  float       protocol_ver;     /* Version of the DataLink protocol in use */
+  float       serverproto;      /* Server version of the DataLink protocol */
   const char *info;             /* INFO level to request */
   int         link;		/* The network socket descriptor */
   DLStat     *stat;             /* Persistent state information */
@@ -157,18 +156,16 @@ extern int    dl_parse_streamlist (DLCP *dlconn, const char *streamlist,
 				   const char *defselect);
 
 /* network.c */
-extern int    dl_configlink (DLCP * dlconn);
-extern int    dl_send_info (DLCP * dlconn, const char * info_level,
-			    int verbose);
-extern int    dl_connect (DLCP * dlconn, int sayhello);
+extern int    dl_connect (DLCP * dlconn);
 extern void   dl_disconnect (DLCP * dlconn);
-extern int    dl_ping (DLCP * dlconn, char *serverid, char *site);
-extern int    dl_senddata (DLCP * dlconn, void *buffer, size_t buflen,
-			   const char *ident, void *resp, int resplen);
-extern int    dl_recvdata (DLCP * dlconn, void *buffer, size_t maxbytes,
-			   const char *ident);
-extern int    dl_recvresp (DLCP * dlconn, void *buffer, size_t maxbytes,
-                           const char *command, const char *ident);
+extern int    dl_exchangeID (DLCP * dlconn);
+extern int    dl_senddata (DLCP * dlconn, void *buffer, size_t sendlen);
+extern int    dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
+			     void *packetbuf, size_t packetlen,
+			     void *resp, int resplen);
+extern int    dl_recvdata (DLCP * dlconn, void *buffer, size_t readlen);
+extern int    dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen);
+
 /* timeutils.c */
 extern int    dl_doy2md (int year, int jday, int *month, int *mday);
 extern int    dl_md2doy (int year, int month, int mday, int *jday);
