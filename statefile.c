@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.012
+ * modified: 2008.030
  ***************************************************************************/
 
 #include <stdio.h>
@@ -29,35 +29,43 @@ int
 dl_savestate (DLCP * dlconn, const char *statefile)
 {
   SLstream *curstream;
-  FILE *statefp;
-
+  char line[100];
+  int linelen;
+  int statefd;
+  
   curstream = dlconn->streams;
 
   /* Open the state file */
-  if ((statefp = fopen (statefile, "wb")) == NULL)
+  if ( (statefd = dlp_openfile (statefile, 'w')) < 0 )
     {
       dl_log_r (dlconn, 2, 0, "cannot open state file for writing\n");
       return -1;
     }
-
+  
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
-
+  
   /* Traverse stream chain and write sequence numbers */
-  while (curstream != NULL)
+  while ( curstream )
     {
-      fprintf (statefp, "%s %s %d %s\n",
-	       curstream->net, curstream->sta,
-	       curstream->seqnum, curstream->timestamp);
-
+      linelen = snprintf (line, sizeof(line), "%s %s %d %s\n",
+                          curstream->net, curstream->sta,
+                          curstream->seqnum, curstream->timestamp);
+      
+      if ( write (statefd, line, linelen) != linelen )
+        {
+          dl_log_r (dlconn, 2, 0, "cannot write to state file, %s\n", strerror (errno));
+          return -1;
+        }
+      
       curstream = curstream->next;
     }
-
-  if (fclose (statefp))
+  
+  if ( close (statefd) )
     {
       dl_log_r (dlconn, 2, 0, "cannot close state file, %s\n", strerror (errno));
       return -1;
     }
-
+  
   return 0;
 } /* End of dl_savestate() */
 
@@ -77,7 +85,7 @@ int
 dl_recoverstate (DLCP * dlconn, const char *statefile)
 {
   SLstream *curstream;
-  FILE *statefp;
+  int statefd;
   char net[3];
   char sta[6];
   char timestamp[20];
@@ -91,9 +99,9 @@ dl_recoverstate (DLCP * dlconn, const char *statefile)
   timestamp[0] = '\0';
 
   /* Open the state file */
-  if ((statefp = fopen (statefile, "rb")) == NULL)
+  if ( (statefd = dlp_openfile (statefile, 'r')) < 0 )
     {
-      if (errno == ENOENT)
+      if ( errno == ENOENT )
 	{
 	  dl_log_r (dlconn, 1, 0, "could not find state file: %s\n", statefile);
 	  return 1;
@@ -109,7 +117,7 @@ dl_recoverstate (DLCP * dlconn, const char *statefile)
 
   count = 1;
 
-  while ( (fgets (line, sizeof(line), statefp)) !=  NULL)
+  while ( (dl_readline (statefd, line, sizeof(line))) >= 0 )
     {
       fields = sscanf (line, "%2s %5s %d %19[0-9,]\n",
 		       net, sta, &seqnum, timestamp);
@@ -142,7 +150,7 @@ dl_recoverstate (DLCP * dlconn, const char *statefile)
       count++;
     }
 
-  if ( fclose (statefp) )
+  if ( close (statefd) )
     {
       dl_log_r (dlconn, 2, 0, "could not close state file, %s\n", strerror (errno));
       return -1;

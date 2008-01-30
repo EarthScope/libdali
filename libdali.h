@@ -179,6 +179,7 @@ extern dltime_t dl_timestr2dltime (char *timestr);
 /* genutils.c */
 extern int    dl_bigendianhost (void);
 extern double dl_dabs (double value);
+extern int    sl_readline (int fd, char *buffer, int buflen);
 
 /* logging.c */
 extern int    dl_log (int level, int verb, ...);

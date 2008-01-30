@@ -6,7 +6,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.013
+ * modified: 2008.030
  ***************************************************************************/
 
 #include <stdio.h>
@@ -41,7 +41,7 @@ int
 dl_read_streamlist (DLCP * dlconn, const char * streamfile,
 		    const char * defselect)
 {
-  FILE *streamfp;
+  int streamfd;
   char net[3];
   char sta[6];
   char selectors[100];
@@ -56,9 +56,9 @@ dl_read_streamlist (DLCP * dlconn, const char * streamfile,
   selectors[0] = '\0';
 
   /* Open the stream list file */
-  if ((streamfp = fopen (streamfile, "rb")) == NULL)
+  if ( (streamfd = dlp_openfile (streamfile, 'r')) < 0 )
     {
-      if (errno == ENOENT)
+      if ( errno == ENOENT )
 	{
 	  dl_log_r (dlconn, 2, 0, "could not find stream list file: %s\n", streamfile);
 	  return -1;
@@ -75,11 +75,11 @@ dl_read_streamlist (DLCP * dlconn, const char * streamfile,
   count = 1;
   stacount = 0;
 
-  while ( (fgets (line, sizeof(line), streamfp)) !=  NULL)
+  while ( (dl_readline (streamfd, line, sizeof(line))) >= 0 )
     {
       fields = sscanf (line, "%2s %5s %99[a-zA-Z0-9?. ]\n",
 		       net, sta, selectors);
-
+      
       /* Ignore blank or comment lines */
       if ( fields < 0 || net[0] == '#' || net[0] == '*' )
 	continue;
@@ -113,12 +113,12 @@ dl_read_streamlist (DLCP * dlconn, const char * streamfile,
       dl_log_r (dlconn, 1, 2, "Read %d streams from %s\n", stacount, streamfile);
     }
 
-  if ( fclose (streamfp) )
+  if ( close (streamfd) )
     {
       dl_log_r (dlconn, 2, 0, "closing stream list file, %s\n", strerror (errno));
       return -1;
     }
-
+  
   return count;
 }  /* End of dl_read_streamlist() */
 
