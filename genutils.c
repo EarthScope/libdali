@@ -62,7 +62,7 @@ dl_dabs (double value)
  *
  * Returns the number of characters read on success and -1 on error.
  ***************************************************************************/
-ing
+int
 dl_readline (int fd, char *buffer, int buflen)
 {
   int nread = 0;

@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.026
+ * modified: 2008.030
  ***************************************************************************/
 
 
@@ -64,7 +64,7 @@ typedef int64_t dltime_t;
 /* Persistent connection state information */
 typedef struct DLStat_s
 {
-  char    databuf[MAXPACKETSIZE]; /* Data buffer for received packets */
+  char    databuf[MAXPACKETLEN];/* Data buffer for received packets */
   int     recptr;               /* Receive pointer for databuf */
   int     sendptr;              /* Send pointer for databuf */
 

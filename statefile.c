@@ -28,13 +28,12 @@
 int
 dl_savestate (DLCP * dlconn, const char *statefile)
 {
-  SLstream *curstream;
-  char line[100];
+  char line[200];
   int linelen;
   int statefd;
   
   curstream = dlconn->streams;
-
+  
   /* Open the state file */
   if ( (statefd = dlp_openfile (statefile, 'w')) < 0 )
     {
@@ -44,22 +43,17 @@ dl_savestate (DLCP * dlconn, const char *statefile)
   
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
   
-  /* Traverse stream chain and write sequence numbers */
-  while ( curstream )
+  /* Write state information */
+  linelen = snprintf (line, sizeof(line), "%s %lld %lld\n",
+		      dlconn->addr, dlconn->stat->pktid, dlconn->stat->pkttime);
+  
+  if ( write (statefd, line, linelen) != linelen )
     {
-      linelen = snprintf (line, sizeof(line), "%s %s %d %s\n",
-                          curstream->net, curstream->sta,
-                          curstream->seqnum, curstream->timestamp);
-      
-      if ( write (statefd, line, linelen) != linelen )
-        {
-          dl_log_r (dlconn, 2, 0, "cannot write to state file, %s\n", strerror (errno));
-          return -1;
-        }
-      
-      curstream = curstream->next;
+      dl_log_r (dlconn, 2, 0, "cannot write to state file, %s\n", strerror (errno));
+      return -1;
     }
   
+  /* Close the state file */
   if ( close (statefd) )
     {
       dl_log_r (dlconn, 2, 0, "cannot close state file, %s\n", strerror (errno));
@@ -68,6 +62,8 @@ dl_savestate (DLCP * dlconn, const char *statefile)
   
   return 0;
 } /* End of dl_savestate() */
+
+CHAD, recover needs fixing for DataLink, ie no streams.
 
 
 /***************************************************************************
