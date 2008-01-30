@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.027
+ * Version: 2008.030
  ***************************************************************************/
 
 #include <stdio.h>
@@ -35,7 +35,7 @@
  * Returns -1 on errors otherwise the socket descriptor created.
  ***************************************************************************/
 int
-dl_connect (DLCP * dlconn)
+dl_connect (DLCP *dlconn)
 {
   int sock;
   int on = 1;
@@ -145,7 +145,7 @@ dl_connect (DLCP * dlconn)
  *
  ***************************************************************************/
 void
-dl_disconnect (DLCP * dlconn)
+dl_disconnect (DLCP *dlconn)
 {
   if ( dlconn->link > 0 )
     {
@@ -166,7 +166,7 @@ dl_disconnect (DLCP * dlconn)
  * Returns -1 on errors, 0 on success.
  ***************************************************************************/
 int
-dl_exchangeID (DLCP * dlconn)
+dl_exchangeID (DLCP *dlconn)
 {
   int ret = 0;
   int servcnt = 0;
@@ -303,8 +303,8 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
 	       void *packetbuf, size_t packetlen,
 	       void *resp, int resplen)
 {
-  int bytesread = 0;		/* bytes read into resp */
-  char wirepacket[MAXPACKETSIZE+3];
+  int bytesread = 0;		/* bytes read into resp buffer */
+  char wirepacket[MAXPACKETSIZE];
   
   if ( !dlconn || ! headerbuf )
     return -1;
@@ -318,7 +318,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
     }
   
   /* Sanity check that the header + packet data is not too large */
-  if ( (headerlen + packetlen) > MAXPACKETSIZE )
+  if ( (3 + headerlen + packetlen) > MAXPACKETSIZE )
     {
       dl_log_r (dlconn, 2, 0, "[%s] packet is too large (%d), max is %d\n",
 		dlconn->addr, (headerlen + packetlen), MAXPACKETSIZE);
@@ -330,9 +330,10 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   wirepacket[1] = 'L';
   wirepacket[2] = (uint8_t) headerlen;
   
-  /* Copy header and packet data into the wire packet */
+  /* Copy header into the wire packet */
   memcpy (wirepacket+3, headerbuf, headerlen);
   
+  /* Copy packet data into the wire packet if supplied */
   if ( packetbuf && packetlen > 0 )
     memcpy (wirepacket+3+headerlen, packetbuf, packetlen);
   

@@ -26,14 +26,15 @@
  *  0 : completed successfully
  ***************************************************************************/
 int
-dl_savestate (DLCP * dlconn, const char *statefile)
+dl_savestate (DLCP *dlconn, const char *statefile)
 {
   char line[200];
   int linelen;
   int statefd;
   
-  curstream = dlconn->streams;
-  
+  if ( ! dlconn || ! statefile )
+    return -1;
+
   /* Open the state file */
   if ( (statefd = dlp_openfile (statefile, 'w')) < 0 )
     {
@@ -43,7 +44,7 @@ dl_savestate (DLCP * dlconn, const char *statefile)
   
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
   
-  /* Write state information */
+  /* Write state information: <server address> <packet ID> <packet time> */
   linelen = snprintf (line, sizeof(line), "%s %lld %lld\n",
 		      dlconn->addr, dlconn->stat->pktid, dlconn->stat->pkttime);
   
@@ -53,7 +54,6 @@ dl_savestate (DLCP * dlconn, const char *statefile)
       return -1;
     }
   
-  /* Close the state file */
   if ( close (statefd) )
     {
       dl_log_r (dlconn, 2, 0, "cannot close state file, %s\n", strerror (errno));
@@ -63,14 +63,11 @@ dl_savestate (DLCP * dlconn, const char *statefile)
   return 0;
 } /* End of dl_savestate() */
 
-CHAD, recover needs fixing for DataLink, ie no streams.
-
 
 /***************************************************************************
  * dl_recoverstate:
  *
- * Recover the state file and put the sequence numbers and time stamps into
- * the pre-existing stream chain entries.
+ * Recover connection state from a state file.
  *
  * Returns:
  * -1 : error
@@ -78,22 +75,20 @@ CHAD, recover needs fixing for DataLink, ie no streams.
  *  1 : file could not be opened (probably not found)
  ***************************************************************************/
 int
-dl_recoverstate (DLCP * dlconn, const char *statefile)
+dl_recoverstate (DLCP *dlconn, const char *statefile)
 {
-  SLstream *curstream;
   int statefd;
-  char net[3];
-  char sta[6];
-  char timestamp[20];
-  char line[100];
-  int seqnum;
+  char line[200];
+  char addrstr[100];
+  int64_t pktid;
+  dltime_t pkttime;
   int fields;
-  int count;
-
-  net[0] = '\0';
-  sta[0] = '\0';
-  timestamp[0] = '\0';
-
+  int found = 0;
+  int count = 1;
+  
+  if ( ! dlconn || ! statefile )
+    return -1;
+  
   /* Open the state file */
   if ( (statefd = dlp_openfile (statefile, 'r')) < 0 )
     {
@@ -108,16 +103,16 @@ dl_recoverstate (DLCP * dlconn, const char *statefile)
 	  return -1;
 	}
     }
-
+  
   dl_log_r (dlconn, 1, 1, "recovering connection state from state file\n");
-
-  count = 1;
-
+  
+  /* Loop through lines in the file and find the matching server address */
   while ( (dl_readline (statefd, line, sizeof(line))) >= 0 )
     {
-      fields = sscanf (line, "%2s %5s %d %19[0-9,]\n",
-		       net, sta, &seqnum, timestamp);
-
+      addrstr[0] = '\0';
+      
+      fields = sscanf (line, "%s %lld %lld\n", addrstr, &pktid, &pkttime);
+      
       if ( fields < 0 )
         continue;
       
@@ -126,26 +121,24 @@ dl_recoverstate (DLCP * dlconn, const char *statefile)
 	  dl_log_r (dlconn, 2, 0, "could not parse line %d of state file\n", count);
 	}
       
-      /* Search for a matching NET and STA in the stream chain */
-      curstream = dlconn->streams;
-      while (curstream != NULL)
+      /* Check for a matching server address and set connection values if found */
+      if ( ! strncmp (dlconn->addr, addrstr, sizeof(addrstr)) )
 	{
-	  if (!strcmp (net, curstream->net) &&
-	      !strcmp (sta, curstream->sta))
-	    {
-	      curstream->seqnum = seqnum;
-
-	      if ( fields == 4 )
-		strncpy (curstream->timestamp, timestamp, 20);
-
-	      break;
-	    }
-	  curstream = curstream->next;
+	  dlconn->stat->pktid = pktid;
+	  dlconn->stat->pkttime = pkttime;
+	  
+	  found = 1;
+	  break;
 	}
-
+      
       count++;
     }
-
+  
+  if ( ! found )
+    {
+      dl_log_r (dlconn, 1, 0, "Server address not found in state file: %s\n", dlconn->addr);
+    }  
+  
   if ( close (statefd) )
     {
       dl_log_r (dlconn, 2, 0, "could not close state file, %s\n", strerror (errno));

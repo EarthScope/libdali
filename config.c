@@ -38,8 +38,8 @@
  * Returns the number of streams configured or -1 on error.
  ***************************************************************************/
 int
-dl_read_streamlist (DLCP * dlconn, const char * streamfile,
-		    const char * defselect)
+dl_read_streamlist (DLCP *dlconn, const char *streamfile,
+		    const char *defselect)
 {
   int streamfd;
   char net[3];

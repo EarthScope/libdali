@@ -34,7 +34,7 @@ extern "C" {
 #define LIBDALI_VERSION "1.0"
 #define LIBDALI_RELEASE "2008.026"
 
-#define MAXPACKETLEN        16384    /* Maximum packet size */
+#define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
 
 /* Define a maximium stream ID string length */
@@ -64,25 +64,28 @@ typedef int64_t dltime_t;
 /* Persistent connection state information */
 typedef struct DLStat_s
 {
-  char    databuf[MAXPACKETLEN];/* Data buffer for received packets */
-  int     recptr;               /* Receive pointer for databuf */
-  int     sendptr;              /* Send pointer for databuf */
+  char     databuf[MAXPACKETSIZE];/* Data buffer for received packets */
+  int      recptr;                /* Receive pointer for databuf */
+  int      sendptr;               /* Send pointer for databuf */
 
-  int8_t  netto_trig;           /* Network timeout trigger */
-  int8_t  netdly_trig;          /* Network re-connect delay trigger */
-  int8_t  keepalive_trig;       /* Send keepalive trigger */
+  int64_t  pktid;                 /* Packet ID of last packet received */
+  dltime_t pkttime;               /* Packet time of last packet received */
+  
+  int8_t   netto_trig;            /* Network timeout trigger */
+  int8_t   netdly_trig;           /* Network re-connect delay trigger */
+  int8_t   keepalive_trig;        /* Send keepalive trigger */
+  
+  double   netto_time;            /* Network timeout time stamp */
+  double   netdly_time;           /* Network re-connect delay time stamp */
+  double   keepalive_time;        /* Keepalive time stamp */
 
-  double  netto_time;           /* Network timeout time stamp */
-  double  netdly_time;          /* Network re-connect delay time stamp */
-  double  keepalive_time;       /* Keepalive time stamp */
-
-  enum                          /* Connection state */
+  enum                           /* Connection state */
     {
       DL_DOWN, DL_UP, DL_DATA
     }
   dl_state;
 
-  enum                          /* INFO query state */
+  enum                           /* INFO query state */
     {
       NoQuery, InfoQuery, KeepAliveQuery
     }
