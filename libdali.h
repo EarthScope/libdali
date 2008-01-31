@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.030
+ * modified: 2008.031
  ***************************************************************************/
 
 
@@ -155,8 +155,6 @@ extern void   dl_terminate (DLCP * dlconn);
 /* config.c */
 extern int    dl_read_streamlist (DLCP *dlconn, const char *streamfile,
 				  const char *defselect);
-extern int    dl_parse_streamlist (DLCP *dlconn, const char *streamlist,
-				   const char *defselect);
 
 /* network.c */
 extern int    dl_connect (DLCP * dlconn);
