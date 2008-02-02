@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.012
+ * modified: 2008.032
  ***************************************************************************/
 
 #include <stdio.h>
@@ -135,3 +135,55 @@ dl_strncpclean (char *dest, const char *source, int length)
 
   return didx;
 }  /* End of dl_strncpclean() */
+
+
+/***************************************************************************
+ * dl_addtostring:
+ *
+ * Concatinate one string to another with a delimiter in-between
+ * growing the target string as needed up to a maximum length.
+ * 
+ * Return 0 on success, -1 on memory allocation error and -2 when
+ * string would grow beyond maximum length.
+ ***************************************************************************/
+int
+dl_addtostring (char **string, char *add, char *delim, int maxlen)
+{
+  int length;
+  char *ptr;
+  
+  if ( ! string || ! add )
+    return -1;
+  
+  /* If string is empty, allocate space and copy the addition */
+  if ( ! *string )
+    {
+      length = strlen (add) + 1;
+      
+      if ( length > maxlen )
+        return -2;
+      
+      if ( (*string = (char *) malloc (length)) == NULL )
+        return -1;
+      
+      strcpy (*string, add);
+    }
+  /* Otherwise tack on the addition with a delimiter */
+  else
+    {
+      length = strlen (*string) + strlen (delim) + strlen(add) + 1;
+      
+      if ( length > maxlen )
+        return -2;
+      
+      if ( (ptr = (char *) realloc (*string, length)) == NULL )
+        return -1;
+      
+      *string = ptr;
+      
+      strcat (*string, delim);
+      strcat (*string, add);
+    }
+  
+  return 0;
+}  /* End of dl_addtostring() */

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.030
+ * Version: 2008.032
  ***************************************************************************/
 
 #include <stdio.h>

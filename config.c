@@ -6,7 +6,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.031
+ * modified: 2008.032
  ***************************************************************************/
 
 #include <stdio.h>
@@ -19,105 +19,79 @@
 /***************************************************************************
  * dl_read_streamlist:
  *
- * Read a list of streams and selectors from a file and add them to the 
- * stream chain for configuring a multi-station connection.
+ * Read a list of stream regexes from a file and create a composite
+ * regex.
  *
- * If 'defselect' is not NULL or 0 it will be used as the default selectors
- * for entries will no specific selectors indicated.
- *
- * The file is expected to be repeating lines of the form:
- *   <NET> <STA> [selectors]
- * For example:
- * --------
- * # Comment lines begin with a '#' or '*'
- * GE ISP  BH?.D
- * NL HGN
- * MN AQU  BH?  HH?
- * -------- 
- *
- * Returns the number of streams configured or -1 on error.
+ * Returns a composite regex on success and NULL on error.
  ***************************************************************************/
-int
-dl_read_streamlist (DLCP *dlconn, const char *streamfile,
-		    const char *defselect)
+char *
+dl_read_streamlist (DLCP *dlconn, const char *streamfile)
 {
-  int streamfd;
-  char net[3];
-  char sta[6];
-  char selectors[100];
+  char *regex = 0;
   char line[100];
-  int fields;
+  char *ptr;
+  int streamfd;
   int count;
-  int stacount;
-  int addret;
-
-  net[0] = '\0';
-  sta[0] = '\0';
-  selectors[0] = '\0';
-
+  int idx;
+  
   /* Open the stream list file */
   if ( (streamfd = dlp_openfile (streamfile, 'r')) < 0 )
     {
       if ( errno == ENOENT )
 	{
 	  dl_log_r (dlconn, 2, 0, "could not find stream list file: %s\n", streamfile);
-	  return -1;
+	  return NULL;
 	}
       else
 	{
 	  dl_log_r (dlconn, 2, 0, "opening stream list file, %s\n", strerror (errno));
-	  return -1;
+	  return NULL;
 	}
     }
-
-  dl_log_r (dlconn, 1, 1, "Reading stream list from %s\n", streamfile);
-
-  count = 1;
-  stacount = 0;
-
+  
+  dl_log_r (dlconn, 1, 1, "Reading list of streams from %s\n", streamfile);
+  
   while ( (dl_readline (streamfd, line, sizeof(line))) >= 0 )
     {
-      fields = sscanf (line, "%2s %5s %99[a-zA-Z0-9?. ]\n",
-		       net, sta, selectors);
+      ptr = line;
+      
+      /* Trim initial white space */
+      while ( isspace ((int) *ptr) )
+	ptr++;
+      
+      /* Trim trailing white space */
+      idx = strlen(ptr) - 1;
+      while ( idx >= 0 && isspace ((int) ptr[idx]) )
+	ptr[idx--] = '\0';
       
       /* Ignore blank or comment lines */
-      if ( fields < 0 || net[0] == '#' || net[0] == '*' )
+      if ( strlen(ptr) == 0 || ptr[0] == '#' || ptr[0] == '*' )
 	continue;
-
-      if ( fields < 2 )
-	{
-	  dl_log_r (dlconn, 2, 0, "cannot parse line %d of stream list\n", count);
-	}
       
       /* Add this stream to the stream chain */
-      if ( fields == 3 )
+      if ( dl_addtostring (&regex, ptr, "|", MAXREGEXSIZE) )
 	{
-	  dl_addstream (dlconn, net, sta, selectors, -1, NULL);
-	  stacount++;
-	}
-      else
-	{
-	  addret = dl_addstream (dlconn, net, sta, defselect, -1, NULL);
-	  stacount++;
+	  dl_log_r (dlconn, 2, 0, "no streams defined in %s\n", streamfile);
+	  return NULL;
 	}
       
-	count++;
+      count++;
     }
-
-  if ( stacount == 0 )
+  
+  if ( count == 0 )
     {
       dl_log_r (dlconn, 2, 0, "no streams defined in %s\n", streamfile);
     }
-  else if ( stacount > 0 )
+  else if ( count > 0 )
     {
-      dl_log_r (dlconn, 1, 2, "Read %d streams from %s\n", stacount, streamfile);
+      dl_log_r (dlconn, 1, 2, "Read %d streams from %s\n", count, streamfile);
     }
-
+  
   if ( close (streamfd) )
     {
       dl_log_r (dlconn, 2, 0, "closing stream list file, %s\n", strerror (errno));
-      return -1;
+      return NULL;
     }
   
-  return count;
+  return regex;
 }  /* End of dl_read_streamlist() */
