@@ -9,7 +9,7 @@ LIB_OBJS = timeutils.o genutils.o strutils.o \
            logging.o network.o statefile.o config.o \
            portable.o connection.o
 
-CURRENT_VER = 1.1
+CURRENT_VER = 1.0
 COMPAT_VER = 1.0
 
 LIB_A = libdali.a

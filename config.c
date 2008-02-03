@@ -12,6 +12,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "libdali.h"
 
@@ -20,7 +21,7 @@
  * dl_read_streamlist:
  *
  * Read a list of stream regexes from a file and create a composite
- * regex.
+ * regex.  The caller is responsible for free'ing the returned string.
  *
  * Returns a composite regex on success and NULL on error.
  ***************************************************************************/

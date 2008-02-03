@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.032
+ * modified: 2008.033
  ***************************************************************************/
 
 
@@ -65,10 +65,6 @@ typedef int64_t dltime_t;
 /* Persistent connection state information */
 typedef struct DLStat_s
 {
-  char     databuf[MAXPACKETSIZE];/* Data buffer for received packets */
-  int      recptr;                /* Receive pointer for databuf */
-  int      sendptr;               /* Send pointer for databuf */
-
   int64_t  pktid;                 /* Packet ID of last packet received */
   dltime_t pkttime;               /* Packet time of last packet received */
   
@@ -76,22 +72,9 @@ typedef struct DLStat_s
   int8_t   netdly_trig;           /* Network re-connect delay trigger */
   int8_t   keepalive_trig;        /* Send keepalive trigger */
   
-  double   netto_time;            /* Network timeout time stamp */
-  double   netdly_time;           /* Network re-connect delay time stamp */
-  double   keepalive_time;        /* Keepalive time stamp */
-
-  enum                           /* Connection state */
-    {
-      DL_DOWN, DL_UP, DL_DATA
-    }
-  dl_state;
-
-  enum                           /* INFO query state */
-    {
-      NoQuery, InfoQuery, KeepAliveQuery
-    }
-  query_mode;
-    
+  dltime_t netto_time;            /* Network timeout time stamp */
+  dltime_t netdly_time;           /* Network re-connect delay time stamp */
+  dltime_t keepalive_time;        /* Keepalive time stamp */  
 } DLStat;
 
 /* Logging parameters */
@@ -131,66 +114,70 @@ typedef struct DLPacket_s
 
 
 /* connection.c */
-extern int    dl_collect (DLCP *dlconn, DLPacket ** dlpack);
-extern int    dl_collect_nb (DLCP *dlconn, DLPacket ** dlpack);
-extern DLCP * dl_newdlcp (void);
-extern void   dl_freedlcp (DLCP *dlconn);
-extern int    dl_addstream (DLCP *dlconn, const char *net, const char *sta,
-			    const char *selectors, int seqnum,
-			    const char *timestamp);
-extern int    dl_setuniparams (DLCP *dlconn, const char *selectors,
-			       int seqnum, const char *timestamp);
-extern int    dl_request_info (DLCP *dlconn, const char * infostr);
-extern int    dl_sequence (const DLPacket *);
-extern int    dl_packettype (const DLPacket *);
-extern void   dl_terminate (DLCP *dlconn);
+extern DLCP *  dl_newdlcp (void);
+extern void    dl_freedlcp (DLCP *dlconn);
+extern int64_t dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime);
+extern int64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
+extern int64_t dl_match (DLCP *dlconn, char *matchpattern);
+extern int64_t dl_reject (DLCP *dlconn, char *rejectpattern);
+extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen,
+			 char *streamid, dltime_t datatime, int ack);
+extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
+			void *packetdata, int32_t maxdatalen);
+extern int     dl_collect (DLCP *dlconn, DLPacket ** dlpack);
+extern int     dl_collect_nb (DLCP *dlconn, DLPacket ** dlpack);
+extern int     dl_request_info (DLCP *dlconn, const char * infostr);
+extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
+extern void    dl_terminate (DLCP *dlconn);
 
 /* config.c */
-extern char  *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
+extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 
 /* network.c */
-extern int    dl_connect (DLCP *dlconn);
-extern void   dl_disconnect (DLCP *dlconn);
-extern int    dl_exchangeID (DLCP *dlconn);
-extern int    dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
-extern int    dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
-			     void *packetbuf, size_t packetlen,
-			     void *resp, int resplen);
-extern int    dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen);
-extern int    dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen);
+extern int     dl_connect (DLCP *dlconn);
+extern void    dl_disconnect (DLCP *dlconn);
+extern int     dl_exchangeID (DLCP *dlconn);
+extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
+extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
+			      void *packetbuf, size_t packetlen,
+			      void *resp, int resplen);
+extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen);
+extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen);
 
 /* timeutils.c */
-extern int    dl_doy2md (int year, int jday, int *month, int *mday);
-extern int    dl_md2doy (int year, int month, int mday, int *jday);
-extern char  *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds);
-extern char  *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds);
-extern char  *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds);
+extern int     dl_doy2md (int year, int jday, int *month, int *mday);
+extern int     dl_md2doy (int year, int month, int mday, int *jday);
+extern char   *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds);
+extern char   *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds);
+extern char   *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds);
 extern dltime_t dl_time2dltime (int year, int day, int hour, int min, int sec, int usec);
 extern dltime_t dl_seedtimestr2dltime (char *seedtimestr);
 extern dltime_t dl_timestr2dltime (char *timestr);
 
 /* genutils.c */
-extern int    dl_bigendianhost (void);
-extern double dl_dabs (double value);
-extern int    dl_readline (int fd, char *buffer, int buflen);
+extern int     dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
+				 char *chan, char *type);
+extern int     dl_bigendianhost (void);
+extern double  dl_dabs (double value);
+extern int     dl_readline (int fd, char *buffer, int buflen);
 
 /* logging.c */
-extern int    dl_log (int level, int verb, ...);
-extern int    dl_log_r (const DLCP *dlconn, int level, int verb, ...);
-extern int    dl_log_rl (DLLog *log, int level, int verb, ...);
-extern void   dl_loginit (int verbosity,
-			  void (*log_print)(const char*), const char * logprefix,
-			  void (*diag_print)(const char*), const char * errprefix);
-extern void   dl_loginit_r (DLCP *dlconn, int verbosity,
-			    void (*log_print)(const char*), const char * logprefix,
-			    void (*diag_print)(const char*), const char * errprefix);
-extern DLLog *dl_loginit_rl (DLLog *log, int verbosity,
+extern int     dl_log (int level, int verb, ...);
+extern int     dl_log_r (const DLCP *dlconn, int level, int verb, ...);
+extern int     dl_log_rl (DLLog *log, int level, int verb, ...);
+extern void    dl_loginit (int verbosity,
+			   void (*log_print)(const char*), const char * logprefix,
+			   void (*diag_print)(const char*), const char * errprefix);
+extern void    dl_loginit_r (DLCP *dlconn, int verbosity,
 			     void (*log_print)(const char*), const char * logprefix,
 			     void (*diag_print)(const char*), const char * errprefix);
+extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
+			      void (*log_print)(const char*), const char * logprefix,
+			      void (*diag_print)(const char*), const char * errprefix);
 
 /* statefile.c */
-extern int   dl_recoverstate (DLCP *dlconn, const char *statefile);
-extern int   dl_savestate (DLCP *dlconn, const char *statefile);
+extern int  dl_recoverstate (DLCP *dlconn, const char *statefile);
+extern int  dl_savestate (DLCP *dlconn, const char *statefile);
 
 /* strutils.c */
 

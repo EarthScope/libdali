@@ -6,7 +6,7 @@
  * Written by Chad Trabant
  * IRIS Data Management Center
  *
- * modified: 2008.013
+ * modified: 2008.033
  ***************************************************************************/
 
 #include <stdio.h>

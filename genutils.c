@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.032
+ * Version: 2008.033
  ***************************************************************************/
 
 #include <stdio.h>
@@ -13,6 +13,88 @@
 #include <string.h>
 
 #include "libdali.h"
+
+/***************************************************************************
+ * dl_splitstreamid:
+ *
+ * Split stream ID into separate components: "NET_STA_LOC_CHAN/TYPE".
+ * Memory for each component must already be allocated.  If a specific
+ * component is not desired set the appropriate argument to NULL.
+ *
+ * Returns 0 on success and -1 on error.
+ ***************************************************************************/
+int
+dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
+		  char *chan, char *type)
+{
+  char *id;
+  char *ptr, *top, *next;
+  
+  if ( ! streamid )
+    return -1;
+  
+  /* Duplicate stream ID */
+  if ( ! (id = strdup(streamid)) )
+    {
+      lprintf (0, "SplitStreamID(): Error duplicating streamid");
+      return -1;
+    }
+  
+  /* First truncate after the type if included */
+  if ( (ptr = strrchr (id, '/')) )
+    {
+      *ptr++ = '\0';
+      
+      /* Copy the type if requested */
+      if ( type )
+        strcpy (type, ptr);
+    }
+  
+  /* Network */
+  top = id;
+  if ( (ptr = strchr (top, '_')) )
+    {
+      next = ptr + 1;
+      *ptr = '\0';
+      
+      if ( net )
+        strcpy (net, top);
+      
+      top = next;
+    }
+  /* Station */
+  if ( (ptr = strchr (top, '_')) )
+    {
+      next = ptr + 1;
+      *ptr = '\0';
+      if ( sta )
+        strcpy (sta, top);
+      
+      top = next;
+    }
+  /* Location */
+  if ( (ptr = strchr (top, '_')) )
+    {
+      next = ptr + 1;
+      *ptr = '\0';
+      
+      if ( loc )
+        strcpy (loc, top);
+      
+      top = next;
+    }
+  /* Channel */
+  if ( *top && chan )
+    {
+      strcpy (chan, top);
+    }
+  
+  /* Free duplicated stream ID */
+  if ( id )
+    free (id);
+  
+  return 0;
+}  /* End of dl_splitstreamid() */
 
 
 /***************************************************************************

@@ -306,7 +306,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   int bytesread = 0;		/* bytes read into resp buffer */
   char wirepacket[MAXPACKETSIZE];
   
-  if ( !dlconn || ! headerbuf )
+  if ( ! dlconn || ! headerbuf )
     return -1;
   
   /* Sanity check that the header is not too large or zero */

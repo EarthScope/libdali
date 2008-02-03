@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.013
+ * modified: 2008.033
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -15,8 +15,442 @@
 
 #include "libdali.h"
 
-/* Function(s) only used in this source file */
-int update_stream (DLCP * dlconn, DLPacket * dlpack);
+
+/***************************************************************************
+ * dl_newdlcp:
+ *
+ * Allocate, initialze and return a pointer to a new DLCP struct.
+ *
+ * Returns allocated DLCP struct on success, NULL on error.
+ ***************************************************************************/
+DLCP *
+dl_newdlcp (void)
+{
+  DLCP *dlconn;
+
+  dlconn = (DLCP *) malloc (sizeof(DLCP));
+
+  if ( dlconn == NULL )
+    {
+      dl_log_r (NULL, 2, 0, "dl_newdlcp(): error allocating memory\n");
+      return NULL;
+    }
+  
+  /* Set defaults */
+  dlconn->addr         = 0;
+  dlconn->clientid     = 0;
+  dlconn->terminate    = 0;
+  
+  dlconn->keepalive    = 0;
+  dlconn->netto        = 600;
+  dlconn->netdly       = 30;
+  
+  dlconn->serverproto  = 0.0;
+  dlconn->link         = -1;
+  
+  /* Allocate the associated persistent state struct */
+  dlconn->stat = (DLStat *) malloc (sizeof(DLStat));
+  
+  if ( ! dlconn->stat )
+    {
+      dl_log_r (NULL, 2, 0, "dl_newdlcp(): error allocating memory\n");
+      free (dlconn);
+      return NULL;
+    }
+    
+  dlconn->stat->pktid          = 0;
+  dlconn->stat->pkttime        = 0;
+  
+  dlconn->stat->netto_trig     = -1;
+  dlconn->stat->netdly_trig    = 0;
+  dlconn->stat->keepalive_trig = -1;
+  
+  dlconn->stat->netto_time     = 0.0;
+  dlconn->stat->netdly_time    = 0.0;
+  dlconn->stat->keepalive_time = 0.0;
+  
+  dlconn->log = NULL;
+  
+  return dlconn;
+}  /* End of dl_newdlcp() */
+
+
+/***************************************************************************
+ * dl_freedlcp:
+ *
+ * Free all memory associated with a DLCP struct.
+ *
+ ***************************************************************************/
+void
+dl_freedlcp (DLCP *dlconn)
+{
+  if ( dlconn->addr )
+    free (dlconn->addr);
+  
+  if ( dlconn->stat )
+    free (dlconn->stat);
+  
+  if ( dlconn->log )
+    free (dlconn->log);
+  
+  free (dlconn);
+}  /* End of dl_freedlcp() */
+
+
+/***************************************************************************
+ * dl_position:
+ *
+ * Position client read position based on a packet ID and packet time.
+ *
+ * Returns a positive packet ID on success and -1 on error.
+ ***************************************************************************/
+int64_t
+dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
+{
+  int64_t replyvalue = 0;
+  char reply[255];
+  char header[255];
+  int headerlen;
+  int replylen;
+  int rv;
+  
+  if ( ! dlconn )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  if ( pktid < 0 )
+    return -1;
+  
+  /* Create packet header with command: "POSITION SET pktid pkttime" */
+  headerlen = snprintf (header, sizeof(header), "POSITION SET %lld %lld",
+			pktid, pkttime);
+  
+  /* Send command to server */
+  replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
+			    reply, sizeof(reply));
+  
+  if ( replylen <= 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending POSITION command\n");
+      return -1;
+    }
+  
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
+  
+  /* Log server reply message */
+  if ( rv >= 0 )
+    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+  
+  return ( rv < 0 ) ? -1 : replyvalue;
+}  /* End of dl_position() */
+
+
+/***************************************************************************
+ * dl_position_after:
+ *
+ * Position client read position based on a packet data time.
+ *
+ * Returns a positive packet ID on success and -1 on error.
+ ***************************************************************************/
+int64_t
+dl_position_after (DLCP *dlconn, dltime_t datatime)
+{
+  int64_t replyvalue = 0;
+  char pkttime[100];
+  char reply[255];
+  char header[255];
+  int headerlen;
+  int replylen;
+  int rv;
+  
+  if ( ! dlconn )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  /* Create packet header with command: "POSITION AFTER datatime" */
+  headerlen = snprintf (header, sizeof(header), "POSITION AFTER %lld",
+			datatime);
+  
+  /* Send command to server */
+  replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
+			    reply, sizeof(reply));
+  
+  if ( replylen <= 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending POSITION command\n");
+      return -1;
+    }
+  
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
+  
+  /* Log server reply message */
+  if ( rv >= 0 )
+    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+  
+  return ( rv < 0 ) ? -1 : replyvalue;
+}  /* End of dl_position_after() */
+
+
+/***************************************************************************
+ * dl_match:
+ *
+ * Send new match pattern to server or reset matching.  If the
+ * matchpattern is NULL a zero length pattern command is sent to the
+ * server which resets the client matchion setting.
+ *
+ * Returns the count of currently matched streams on success and -1
+ * on error.
+ ***************************************************************************/
+int64_t
+dl_match (DLCP *dlconn, char *matchpattern)
+{
+  int64_t replyvalue = 0;
+  char reply[255];
+  char header[255];
+  int patternlen;
+  int headerlen;
+  int replylen;
+  int rv;
+  
+  if ( ! dlconn )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  patternlen = ( matchpattern ) ? strlen(matchpattern) : 0;
+  
+  /* Create packet header with command: "MATCH size" */
+  headerlen = snprintf (header, sizeof(header), "MATCH %lld",
+			patternlen);
+  
+  /* Send command and pattern to server */
+  replylen = dl_sendpacket (dlconn, header, headerlen,
+			    matchpattern, patternlen,
+			    reply, sizeof(reply));
+  
+  if ( replylen <= 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending MATCH command\n");
+      return -1;
+    }
+  
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
+  
+  /* Log server reply message */
+  if ( rv >= 0 )
+    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+  
+  return ( rv < 0 ) ? -1 : replyvalue;
+}  /* End of dl_match() */
+
+
+/***************************************************************************
+ * dl_reject:
+ *
+ * Send new reject pattern to server or reset rejecting.  If the
+ * rejectpattern is NULL a zero length pattern command is sent to the
+ * server which resets the client rejection setting.
+ *
+ * Returns the count of currently rejected streams on success and -1
+ * on error.
+ ***************************************************************************/
+int64_t
+dl_reject (DLCP *dlconn, char *rejectpattern)
+{
+  int64_t replyvalue = 0;
+  char reply[255];
+  char header[255];
+  int patternlen;
+  int headerlen;
+  int replylen;
+  int rv;
+  
+  if ( ! dlconn )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  patternlen = ( rejectpattern ) ? strlen(rejectpattern) : 0;
+  
+  /* Create packet header with command: "REJECT size" */
+  headerlen = snprintf (header, sizeof(header), "REJECT %lld",
+			patternlen);
+  
+  /* Send command and pattern to server */
+  replylen = dl_sendpacket (dlconn, header, headerlen,
+			    rejectpattern, patternlen,
+			    reply, sizeof(reply));
+  
+  if ( replylen <= 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending REJECT command\n");
+      return -1;
+    }
+  
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
+  
+  /* Log server reply message */
+  if ( rv >= 0 )
+    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+  
+  return ( rv < 0 ) ? -1 : replyvalue;
+}  /* End of dl_reject() */
+
+
+/***************************************************************************
+ * dl_write:
+ *
+ * Send a packet to the server and optionally request and process an
+ * acknowledgement from the server.
+ *
+ * Returns -1 on error and 0 on success when no acknowledgement is
+ * requested and a positive packet ID on success when acknowledgement
+ * is requested.
+ ***************************************************************************/
+int64_t
+dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
+	  dltime_t datatime, int ack)
+{
+  int64_t replyvalue = 0;
+  char reply[255];
+  char header[255];
+  char *flags = ( ack ) ? "A" : "N";
+  int headerlen;
+  int replylen;
+  int rv;
+  
+  if ( ! dlconn || ! packet || ! streamid )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  /* Create packet header with command: "WRITE streamid hpdatatime flags size" */
+  headerlen = snprintf (header, sizeof(header),
+			"WRITE %s %lld %s %d",
+			streamid, datatime, flags, packetlen);
+  
+  /* Send command and packet to server */
+  replylen = dl_sendpacket (dlconn, header, headerlen,
+			    packet, packetlen,
+			    (ack)?reply:NULL, (ack)?sizeof(reply):0);
+  
+  if ( replylen < 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending WRITE command\n");
+      return -1;
+    }
+  else if ( replylen > 0 )
+    {
+      /* Reply message, if sent, will be placed into the reply buffer */
+      rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
+      
+      /* Log server reply message */
+      if ( rv >= 0 )
+	dl_log_r (dlconn, 1, 3, "%s\n", reply);
+      else
+	replyvalue = -1;
+    }
+  
+  return replyvalue;
+}  /* End of dl_write() */
+
+
+/***************************************************************************
+ * dl_read:
+ *
+ * Request and receive a packet from the server.
+ *
+ * Returns 0 on success and -1 on error.
+ ***************************************************************************/
+int
+dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
+	 int32_t maxdatalen)
+{
+  char header[255];
+  int headerlen;
+  int rv = 0;
+  
+  if ( ! dlconn || ! packet || ! packetdata )
+    return -1;
+  
+  if ( dlconn->link <= 0 )
+    return -1;
+  
+  /* Create packet header with command: "READ pktid" */
+  headerlen = snprintf (header, sizeof(header), "READ %lld", pktid);
+  
+  /* Send command and packet to server */
+  if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem sending READ command\n");
+      return -1;
+    }
+  
+  /* Receive packet header */
+  if ( (rv = dl_recvheader (dlconn, header, sizeof(header))) < 0 )
+    {
+      dl_log_r (dlconn, 2, 0, "problem receving packet header\n");
+      return -1;
+    }
+  
+  if ( ! strncmp (header, "PACKET", 6) )
+    {
+      /* Parse PACKET header */
+      rv = sscanf (header, "PACKET %s %lld %lld %ld",
+		   packet->streamid, &(packet->pkttime),
+		   &(packet->datatime), &(packet->datasize));
+      
+      if ( rv != 4 )
+	{
+	  dl_log_r (dlconn, 2, 0, "cannot parse PACKET header\n");
+	  return -1;
+	}
+      
+      if ( packet->datasize > maxdatalen )
+	{
+	  dl_log_r (dlconn, 2, 0,
+		    "packet data larger (%ld) than receiving buffer (%ld)\n",
+		    packet->datasize, maxdatalen);
+	  return -1;
+	}
+      
+      /* Receive packet data */
+      if ( dl_recvdata (dlconn, packetdata, packet->datasize) != packet->datasize )
+	{
+	  dl_log_r (dlconn, 2, 0, "problem receiving packet data\n");
+	  return -1;
+	}
+    }
+  else if ( ! strncmp (header, "ERROR", 5) )
+    {
+      /* Reply message, if sent, will be placed into the header buffer */
+      rv = dl_handlereply (dlconn, header, sizeof(header), NULL);
+      
+      /* Log server reply message */
+      if ( rv >= 0 )
+	dl_log_r (dlconn, 2, 0, "%s\n", header);
+      
+      return -1;
+    }
+  else
+    {
+      dl_log_r (dlconn, 2, 0, "Unrecognized reply string %.6s\n", header);
+      return -1;
+    }
+  
+  return 0;
+}  /* End of dl_read() */
 
 
 /***************************************************************************
@@ -34,7 +468,7 @@ int update_stream (DLCP * dlconn, DLPacket * dlpack);
  * returned and the dlpack pointer is set to NULL.
  ***************************************************************************/
 int
-dl_collect (DLCP * dlconn, DLPacket ** dlpack)
+dl_collect (DLCP *dlconn, DLPacket ** dlpack)
 {
   int    bytesread;
   double current_time;
@@ -411,7 +845,7 @@ dl_collect (DLCP * dlconn, DLPacket ** dlpack)
  * SLTERMINATE is returned and the dlpack pointer is set to NULL.
  ***************************************************************************/
 int
-dl_collect_nb (DLCP * dlconn, DLPacket ** dlpack) 
+dl_collect_nb (DLCP *dlconn, DLPacket ** dlpack) 
 {
   int    bytesread;
   double current_time;
@@ -743,383 +1177,6 @@ dl_collect_nb (DLCP * dlconn, DLPacket ** dlpack)
 
 
 /***************************************************************************
- * update_stream:
- *
- * Update the appropriate stream chain entries given a Mini-SEED
- * record.
- *
- * Returns 0 if successfully updated and -1 if not found or error.
- ***************************************************************************/
-int
-update_stream (DLCP * dlconn, DLPacket * dlpack)
-{
-  SLstream *curstream;
-  struct dl_fsdh_s fsdh;
-  int seqnum;
-  int swapflag = 0;
-  int updates = 0;
-  char net[3];
-  char sta[6];
-  
-  if ( (seqnum = dl_sequence (dlpack)) == -1 )
-    {
-      dl_log_r (dlconn, 2, 0, "update_stream(): could not determine sequence number\b");
-      return -1;
-    }
-  
-  /* Copy fixed header */
-  memcpy (&fsdh, &dlpack->msrecord, sizeof(struct dl_fsdh_s));
-  
-  /* Check to see if byte swapping is needed (bogus year makes good test) */
-  if ((fsdh.start_time.year < 1900) || (fsdh.start_time.year > 2050))
-    swapflag = 1;
-  
-  /* Change byte order? */
-  if ( swapflag )
-    {
-      dl_gswap2 (&fsdh.start_time.year);
-      dl_gswap2 (&fsdh.start_time.day);
-    }
-  
-  curstream = dlconn->streams;
-  
-  /* Generate some "clean" net and sta strings */
-  if ( curstream != NULL )
-    {
-      dl_strncpclean (net, fsdh.network, 2);
-      dl_strncpclean (sta, fsdh.station, 5);
-    }
-  
-  /* For uni-station mode */
-  if ( curstream != NULL )
-    {
-      if ( strcmp (curstream->net, UNINETWORK) == 0 &&
-	   strcmp (curstream->sta, UNISTATION) == 0 )
-	{
-	  int month = 0;
-	  int mday = 0;
-	  
-	  dl_doy2md (fsdh.start_time.year,
-		     fsdh.start_time.day,
-		     &month, &mday);
-	  
-	  curstream->seqnum = seqnum;
-	  
-	  snprintf (curstream->timestamp, 20,
-		    "%04d,%02d,%02d,%02d,%02d,%02d",
-		    fsdh.start_time.year,
-		    month,
-		    mday,
-		    fsdh.start_time.hour,
-		    fsdh.start_time.min,
-		    fsdh.start_time.sec);
-	  
-	  return 0;
-	}
-    }
-  
-  /* For multi-station mode, search the stream chain and update all matching entries */
-  while ( curstream != NULL )
-    {
-      /* Use glob matching to match wildcarded network and station codes */
-      if ( dl_globmatch (net, curstream->net) &&
-	   dl_globmatch (sta, curstream->sta) )
-        {
-	  int month = 0;
-	  int mday = 0;
-	  
-	  dl_doy2md (fsdh.start_time.year,
-		     fsdh.start_time.day,
-		     &month, &mday);
-	  
-	  curstream->seqnum = seqnum;
-	  
-	  snprintf (curstream->timestamp, 20,
-		    "%04d,%02d,%02d,%02d,%02d,%02d",
-		    fsdh.start_time.year,
-		    month,
-		    mday,
-		    fsdh.start_time.hour,
-		    fsdh.start_time.min,
-		    fsdh.start_time.sec);
-	  
-	  updates++;
-        }
-      
-      curstream = curstream->next;
-    }
-  
-  /* If no updates then no match was found */
-  if ( updates == 0 )
-    dl_log_r (dlconn, 2, 0, "unexpected data received: %.2s %.6s\n", net, sta);
-  
-  return (updates == 0) ? -1 : 0;
-}  /* End of update_stream() */
-
-
-/***************************************************************************
- * dl_newdlcp:
- *
- * Allocate, initialze and return a pointer to a new DLCP struct.
- *
- * Returns allocated DLCP struct on success, NULL on error.
- ***************************************************************************/
-DLCP *
-dl_newdlcp (void)
-{
-  DLCP * dlconn;
-
-  dlconn = (DLCP *) malloc (sizeof(DLCP));
-
-  if ( dlconn == NULL )
-    {
-      dl_log_r (NULL, 2, 0, "new_dlconn(): error allocating memory\n");
-      return NULL;
-    }
-
-  /* Set defaults */
-  dlconn->streams        = NULL;
-  dlconn->sladdr         = NULL;
-  dlconn->begin_time     = NULL;
-  dlconn->end_time       = NULL;
-
-  dlconn->resume         = 1;
-  dlconn->multistation   = 0;
-  dlconn->dialup         = 0;
-  dlconn->lastpkttime    = 0;
-  dlconn->terminate      = 0;
-  
-  dlconn->keepalive      = 0;
-  dlconn->netto          = 600;
-  dlconn->netdly         = 30;
-  
-  dlconn->link           = -1;
-  dlconn->info           = NULL;
-  dlconn->protocol_ver   = 0.0;
-
-  /* Allocate the associated persistent state struct */
-  dlconn->stat = (SLstat *) malloc (sizeof(SLstat));
-  
-  if ( dlconn->stat == NULL )
-    {
-      dl_log_r (NULL, 2, 0, "new_dlconn(): error allocating memory\n");
-      free (dlconn);
-      return NULL;
-    }
-
-  dlconn->stat->recptr         = 0;
-  dlconn->stat->sendptr        = 0;
-  dlconn->stat->expect_info    = 0;
-
-  dlconn->stat->netto_trig     = -1;
-  dlconn->stat->netdly_trig    = 0;
-  dlconn->stat->keepalive_trig = -1;
-
-  dlconn->stat->netto_time     = 0.0;
-  dlconn->stat->netdly_time    = 0.0;
-  dlconn->stat->keepalive_time = 0.0;
-
-  dlconn->stat->dl_state       = DL_DOWN;
-  dlconn->stat->query_mode     = NoQuery;
-
-  dlconn->log = NULL;
-
-  return dlconn;
-}  /* End of dl_newdlconn() */
-
-
-/***************************************************************************
- * dl_freedlcp:
- *
- * Free all memory associated with a DLCP struct including the 
- * associated stream chain and persistent connection state.
- *
- ***************************************************************************/
-void
-dl_freedlcp (DLCP * dlconn)
-{
-  SLstream *curstream;
-  SLstream *nextstream;
-
-  curstream = dlconn->streams;
-
-  /* Traverse the stream chain and free memory */
-  while (curstream != NULL)
-    {
-      nextstream = curstream->next;
-
-      if ( curstream->selectors != NULL )
-	free (curstream->selectors);
-      free (curstream);
-
-      curstream = nextstream;
-    }
-
-  if ( dlconn->sladdr != NULL )
-    free (dlconn->sladdr);
-
-  if ( dlconn->begin_time != NULL )
-    free (dlconn->begin_time);
-
-  if ( dlconn->end_time != NULL )
-    free (dlconn->end_time);
-
-  if ( dlconn->stat != NULL )
-    free (dlconn->stat);
-
-  if ( dlconn->log != NULL )
-    free (dlconn->log);
-
-  free (dlconn);
-}  /* End of dl_freedlcp() */
-
-
-/***************************************************************************
- * dl_addstream:
- *
- * Add a new stream entry to the stream chain for the given DLCP
- * struct.  No checking is done for duplicate streams.
- *
- *  - selectors should be 0 if there are none to use
- *  - seqnum should be -1 to start at the next data
- *  - timestamp should be 0 if it should not be used
- *
- * Returns 0 if successfully added or -1 on error.
- ***************************************************************************/
-int
-dl_addstream (DLCP * dlconn, const char * net, const char * sta,
-	      const char * selectors, int seqnum,
-	      const char * timestamp)
-{
-  SLstream *curstream;
-  SLstream *newstream;
-  SLstream *laststream = NULL;
-  
-  curstream = dlconn->streams;
-  
-  /* Sanity, check for a uni-station mode entry */
-  if ( curstream )
-    {
-      if ( strcmp (curstream->net, UNINETWORK) == 0 &&
-	   strcmp (curstream->sta, UNISTATION) == 0 )
-	{
-	  dl_log_r (dlconn, 2, 0, "dl_addstream(): uni-station mode already configured!\n");
-	  return -1;
-	}
-    }
-  
-  /* Search the stream chain */
-  while ( curstream != NULL )
-    {
-      laststream = curstream;
-      curstream = curstream->next;
-    }
-  
-  newstream = (SLstream *) malloc (sizeof(SLstream));
-  
-  if ( newstream == NULL )
-    {
-      dl_log_r (dlconn, 2, 0, "dl_addstream(): error allocating memory\n");
-      return -1;
-    }
-  
-  newstream->net = strdup(net);
-  newstream->sta = strdup(sta);
-
-  if ( selectors == 0 || selectors == NULL )
-    newstream->selectors = 0;
-  else
-    newstream->selectors = strdup(selectors);
-
-  newstream->seqnum = seqnum;
-
-  if ( timestamp == 0 || timestamp == NULL )
-    newstream->timestamp[0] = '\0';
-  else
-    strncpy(newstream->timestamp, timestamp, 20);
-
-  newstream->next = NULL;
-  
-  if ( dlconn->streams == NULL )
-    {
-      dlconn->streams = newstream;
-    }
-  else if ( laststream )
-    {
-      laststream->next = newstream;
-    }  
-
-  dlconn->multistation = 1;
-
-  return 0;
-}  /* End of dl_addstream() */
-
-
-/***************************************************************************
- * dl_setuniparams:
- *
- * Set the parameters for a uni-station mode connection for the
- * given DLCP struct.  If the stream entry already exists, overwrite
- * the previous settings.
- * Also sets the multistation flag to 0 (false).
- *
- *  - selectors should be 0 if there are none to use
- *  - seqnum should be -1 to start at the next data
- *  - timestamp should be 0 if it should not be used
- *
- * Returns 0 if successfully added or -1 on error.
- ***************************************************************************/
-int
-dl_setuniparams (DLCP * dlconn, const char * selectors,
-		 int seqnum, const char * timestamp)
-{
-  SLstream *newstream;
-
-  newstream = dlconn->streams;
-
-  if ( newstream == NULL )
-    {
-      newstream = (SLstream *) malloc (sizeof(SLstream));
-
-      if ( newstream == NULL )
-	{
-	  dl_log_r (dlconn, 2, 0, "dl_setuniparams(): error allocating memory\n");
-	  return -1;
-	}
-    }
-  else if ( strcmp (newstream->net, UNINETWORK) != 0 ||
-	    strcmp (newstream->sta, UNISTATION) != 0)
-    {
-      dl_log_r (dlconn, 2, 0, "dl_setuniparams(): multi-station mode already configured!\n");
-      return -1;
-    }
-
-  newstream->net = UNINETWORK;
-  newstream->sta = UNISTATION;
-
-  if ( selectors == 0 || selectors == NULL )
-    newstream->selectors = 0;
-  else
-    newstream->selectors = strdup(selectors);
-
-  newstream->seqnum = seqnum;
-
-  if ( timestamp == 0 || timestamp == NULL )
-    newstream->timestamp[0] = '\0';
-  else
-    strncpy(newstream->timestamp, timestamp, 20);
-
-  newstream->next = NULL;
-  
-  dlconn->streams = newstream;
-  
-  dlconn->multistation = 0;
-
-  return 0;
-}  /* End of dl_setuniparams() */
-
-
-/***************************************************************************
  * dl_request_info:
  *
  * Add an INFO request to the Datalink Connection Description.
@@ -1127,7 +1184,7 @@ dl_setuniparams (DLCP * dlconn, const char * selectors,
  * Returns 0 if successful and -1 if error.
  ***************************************************************************/
 int
-dl_request_info (DLCP * dlconn, const char * infostr)
+dl_request_info (DLCP *dlconn, const char * infostr)
 {
   if ( dlconn->info != NULL )
     {
@@ -1144,115 +1201,93 @@ dl_request_info (DLCP * dlconn, const char * infostr)
 
 
 /***************************************************************************
- * dl_sequence:
+ * dl_handlereply:
  *
- * Check for 'SL' signature and sequence number.
+ * Handle a servers reply to a command.  Server replies are of the form:
  *
- * Returns the packet sequence number of the Datalink packet on success,
- *   0 for INFO packets or -1 on error.
+ * "OK|ERROR value size"
+ *
+ * followed by an optional server message of size bytes.  If size is
+ * greater than zero it will be read from the connection and placed
+ * into buffer.  The server message, if included, will always be a
+ * NULL-terminated string.
+ *
+ * Return values:
+ * -1 = error
+ *  0 = "OK" received
+ *  1 = "ERROR" received
  ***************************************************************************/
 int
-dl_sequence (const DLPacket * dlpack)
+dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
 {
-  int seqnum;
-  char seqstr[7], *sqtail;
-
-  if ( strncmp (dlpack->slhead, SIGNATURE, 2) )
+  char status[10];
+  int64_t pvalue;
+  int64_t size = 0;
+  int rv = 0;
+  
+  if ( ! dlconn || ! buffer )
     return -1;
-
-  if ( !strncmp (dlpack->slhead, INFOSIGNATURE, 6) )
-    return 0;
-
-  strncpy (seqstr, &dlpack->slhead[2], 6);
-  seqstr[6] = '\0';
-  seqnum = strtoul (seqstr, &sqtail, 16);
-
-  if ( seqnum & ~0xffffff || *sqtail )
-    return -1;
-
-  return seqnum;
-}  /* End of dl_sequence() */
-
-
-/***************************************************************************
- * dl_packettype:
- *
- * Check the type of packet.  First check for an INFO packet then check for
- * the first 'important' blockette found in the data record.  If none of
- * the known marker blockettes are found then it is a regular data record.
- *
- * Returns the packet type; defined in libdali.h.
- ***************************************************************************/
-int
-dl_packettype (const DLPacket * dlpack)
-{
-  int b2000 = 0;
-  struct dl_fsdh_s *fsdh;
-
-  uint16_t  num_samples;
-  int16_t   samprate_fact;
-  int16_t   begin_blockette;
-  uint16_t  blkt_type;
-  uint16_t  next_blkt;
-
-  const struct dl_blkt_head_s *p;
-  fsdh = (struct dl_fsdh_s *) &dlpack->msrecord;
-
-  /* Check for an INFO packet */
-  if ( !strncmp (dlpack->slhead, INFOSIGNATURE, 6) )
+  
+  /* Make sure buffer if terminated */
+  buffer[buflen] = '\0';
+  
+  /* Parse reply header */
+  if ( sscanf (buffer, "%10s %lld %lld", status, &pvalue, &size) != 3 )
     {
-      /* Check if it is terminated */
-      if  (dlpack->slhead[SLHEADSIZE - 1] != '*')
-	return SLINFT;
-      else
-	return SLINF;
-    }  
-
-  num_samples     = (uint16_t) ntohs(fsdh->num_samples);
-  samprate_fact   = (int16_t)  ntohs(fsdh->samprate_fact);
-  begin_blockette = (int16_t)  ntohs(fsdh->begin_blockette);
-
-  p = (const struct dl_blkt_head_s *) ((const char *) fsdh + 
-				       begin_blockette);
-
-  blkt_type       = (uint16_t) ntohs(p->blkt_type);
-  next_blkt       = (uint16_t) ntohs(p->next_blkt);
-
-  do
+      dl_log_r (dlconn, 2, 0, "Unable to parse reply header: '%s'\n", buffer);
+      return -1;
+    }
+  
+  /* Store reply value if requested */
+  if ( value )
+    *value = pvalue;
+  
+  /* Check that reply message will fit into buffer */
+  if ( size > buflen )
     {
-      if (((const char *) p) - ((const char *) fsdh) >
-	  MAX_HEADER_SIZE)
+      dl_log_r (dlconn, 2, 0, "Reply message too large (%d) for buffer (%d)\n",
+		size, buflen);
+      return -1;      
+    }
+  
+  /* Receive reply message if included */
+  if ( size > 0 )
+    {
+      /* Receive reply message */
+      if ( dl_recvdata (dlconn, buffer, size) != size )
 	{
-	  return SLNUM;
+	  dl_log_r (dlconn, 2, 0, "Problem receiving reply message\n");
+	  return -1;
 	}
-
-      if (blkt_type >= 200 && blkt_type <= 299)
-	return SLDET;
-      if (blkt_type >= 300 && blkt_type <= 399)
-	return SLCAL;
-      if (blkt_type >= 500 && blkt_type <= 599)
-	return SLTIM;
-      if (blkt_type == 2000)
-	b2000 = 1;
-
-      p = (const struct dl_blkt_head_s *) ((const char *) fsdh +
-				    next_blkt);
       
-      blkt_type       = (uint16_t) ntohs(p->blkt_type);
-      next_blkt       = (uint16_t) ntohs(p->next_blkt);
+      if ( size < buflen )
+	buffer[size] = '\0';
+      else
+	buffer[buflen-1] = '\0';
     }
-  while ((const struct dl_fsdh_s *) p != fsdh);
-
-  if (samprate_fact == 0)
+  /* Make sure buffer is terminated */
+  else
     {
-      if (num_samples != 0)
-	return SLMSG;
-      if (b2000)
-	return SLBLK;
+      buffer[0] = '\0';
     }
-
-  return SLDATA;
-}  /* End of dl_packettype() */
+  
+  /* Check for "OK" status in reply header */
+  if ( ! strncmp (status, "OK", 2) )
+    {
+      rv = 0;
+    }
+  else if ( ! strncmp (status, "ERROR", 5) )
+    {
+      rv = 1;
+    }
+  else
+    {
+      dl_log_r (dlconn, 2, 0, "Unrecognized reply string %.5s\n", buffer);
+      rv = -1;
+    }
+  
+  return rv;
+}  /* End of dl_handlereply() */
 
 
 /***************************************************************************
@@ -1261,7 +1296,7 @@ dl_packettype (const DLPacket * dlpack)
  * Set the terminate flag in the DLCP.
  ***************************************************************************/
 void
-dl_terminate (DLCP * dlconn)
+dl_terminate (DLCP *dlconn)
 {
   dl_log_r (dlconn, 1, 1, "Terminating connection\n");
 
