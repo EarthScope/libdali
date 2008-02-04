@@ -1,0 +1,43 @@
+
+
+All server-client exchange tokens are ASCII
+All exchanges are prefixed by a 3 byte sequence:
+'D', 'L' and a 1-byte unsigned integer (length of header)
+High-precision times are epochs times in microseconds
+
+Client commands:
+
+c  POSITION SET pktid hppkttime
+c  POSITION AFTER hptime
+  - Reply value is packet ID
+
+c  MATCH size|<match pattern of length size>
+c  REJECT size|<reject pattern of length size>
+   - Reply value is count of current streams matched or rejected
+
+c  WRITE streamid hpdatatime flags size|<packet data of length size>
+  - Flags: N = no ack, A = ack requested
+  - Reply value, when ack requested, is the inserted packet ID
+
+c  READ pktid
+  - Reply with either PACKET or ERROR
+
+  STREAM
+
+  ID
+
+  INFO <info type>
+
+Server replies:
+
+ERROR value size|<error message>
+OK value size|<status message>
+
+Returned INFO requests:
+
+INFO size|<XML info data of length size>
+
+Returned packets:
+
+S  PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+
