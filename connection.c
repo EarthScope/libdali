@@ -539,77 +539,59 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 /***************************************************************************
  * dl_collect:
  *
- * Routine to manage a connection to a Datalink server based on the values
- * given in the dlconn struct and collect data.
+ * Send the STREAM command and manage a connection to a Datalink
+ * server based on the values given in the dlconn struct and collect
+ * data.
  *
- * Designed to run in a tight loop at the heart of a client program, this
- * function will return every time a packet is received.
+ * Designed to run in a tight loop at the heart of a client program,
+ * this function will return every time a packet is received.  On
+ * successfully receiving a packet dlpack will be populated and the
+ * packet body will be copied into packet buffer.
  *
- * Returns DLPACKET when something is received and sets the dlpack
- * pointer to the received packet.  When the connection was closed by
- * the server or the termination sequence completed SLTERMINATE is
- * returned and the dlpack pointer is set to NULL.
+ * Returns DLPACKET when something is received.  Returns DLTERMINATE
+ * when the connection was closed by the server or the termination
+ * sequence completed.  Returns DLERROR when an error occurred.
  ***************************************************************************/
 int
-dl_collect (DLCP *dlconn, DLPacket ** dlpack)
+dl_collect (DLCP *dlconn, DLPacket *dlpack, void *packet, size_t maxpacketlen)
 {
-  int    bytesread;
-  double current_time;
-  char   retpacket;
-
+  dl_time_t now;
+  int  bytesread;
+  char retpacket;
+  
   /* For select()ing during the read loop */
   struct timeval select_tv;
   fd_set         select_fd;
   int            select_ret;
-
-  *dlpack = NULL;
-
-  /* Check if the info was set */
-  if ( dlconn->info != NULL )
-    {
-      dlconn->stat->query_mode = InfoQuery;
-    }
   
-  /* If the connection is not up check the DLCP and reset the timing variables */
+  if ( ! dlconn || ! dlpack || ! packet )
+    return DLERROR;
+  
   if ( dlconn->link == -1 )
-    {
-      if ( dl_checkdlcp(dlconn) )
-	{
-	  dl_log_r (dlconn, 2, 0, "problems with the connection description\n");
-	  return SLTERMINATE;
-	}
-
-      dlconn->stat->netto_trig     = -1;	   /* Init net timeout trigger to reset state */
-      dlconn->stat->keepalive_trig = -1;	   /* Init keepalive trigger to reset state */
-    }
-
+    return DLERROR;
+  
   /* Start the primary loop  */
-  while (1)
+  for (;;)
     {
       if ( ! dlconn->terminate )
 	{
-	  if (dlconn->link == -1)
-	    {
-	      dlconn->stat->dl_state = DL_DOWN;
-	    }
-	  
 	  /* Check for network timeout */
-	  if (dlconn->stat->dl_state == DL_DATA && dlconn->netto && dlconn->stat->netto_trig > 0)
+	  if ( dlconn->netto && dlconn->stat->netto_trig > 0 )
 	    {
 	      dl_log_r (dlconn, 1, 0, "network timeout (%ds), reconnecting in %ds\n",
 			dlconn->netto, dlconn->netdly);
 	      dlconn->link = dl_disconnect (dlconn);
-	      dlconn->stat->dl_state = DL_DOWN;
 	      dlconn->stat->netto_trig = -1;
 	      dlconn->stat->netdly_trig = -1;
 	    }
 	  
 	  /* Check if a keepalive packet needs to be sent */
-	  if (dlconn->stat->dl_state == DL_DATA && !dlconn->stat->expect_info &&
-	      dlconn->keepalive && dlconn->stat->keepalive_trig > 0)
+	  if ( dlconn->keepalive && dlconn->stat->keepalive_trig > 0 )
 	    {
 	      dl_log_r (dlconn, 1, 2, "sending keepalive request\n");
-	      
+
+	      CHAD, use dl_getid() here.
+
 	      if ( dl_send_info (dlconn, "ID", 3) != -1 )
 		{
 		  dlconn->stat->query_mode = KeepAliveQuery;
@@ -653,7 +635,7 @@ dl_collect (DLCP *dlconn, DLPacket ** dlpack)
 	    }
 	  
 	  /* Negotiate/configure the connection */
-	  if (dlconn->stat->dl_state == DL_UP)
+	  if ( dlconn->stat->dl_state == DL_UP )
 	    {
 	      int slconfret = 0;
 	      

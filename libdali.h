@@ -32,7 +32,7 @@ extern "C" {
 #include "portable.h"
 
 #define LIBDALI_VERSION "1.0"
-#define LIBDALI_RELEASE "2008.032"
+#define LIBDALI_RELEASE "2008.034"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -42,9 +42,10 @@ extern "C" {
 #define MAXSTREAMID 60
 
 /* Return values for dl_collect() and dl_collect_nb() */
-#define DLPACKET    1
 #define DLTERMINATE 0
-#define DLNOPACKET -1
+#define DLPACKET    1
+#define DLNOPACKET  2
+#define DLERROR     3
 
 /* Define the high precision time tick interval as 1/modulus seconds *
  * Default modulus of 1000000 defines tick interval as a microsecond */
