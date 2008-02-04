@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.033
+ * modified: 2008.034
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -98,6 +98,90 @@ dl_freedlcp (DLCP *dlconn)
 
 
 /***************************************************************************
+ * dl_getid:
+ *
+ * Send the ID command including the client ID and optionally parse
+ * the capability flags from the server response.
+ *
+ * Returns -1 on errors, 0 on success.
+ ***************************************************************************/
+int
+dl_getid (DLCP *dlconn, int parseresp)
+{
+  int ret = 0;
+  char sendstr[255];		/* Buffer for command strings */
+  char recvstr[255];		/* Buffer for server response */
+  char *capptr;                 /* Pointer to capabilities flags */  
+  
+  /* Send ID command including client ID */
+  sprintf (sendstr, "ID %s", dlconn->clientid);
+  dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
+  
+  if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
+		      recvstr, sizeof(recvstr)) < 0 )
+    {
+      return -1;
+    }
+  
+  /* Verify DataLink signature in server response */
+  if ( strncasecmp (recvstr, "DATALINK", 8) )
+    {
+      dl_log_r (dlconn, 1, 1,
+                "[%s] unrecognized server ID: %8.8s\n",
+                dlconn->addr, recvstr);
+      return -1;
+    }
+  
+  /* Parse the response from the server if requested */
+  if ( parseresp )
+    {
+      /* Search for capabilities flags in server ID by looking for "::"
+       * The expected format of the complete server ID is:
+       * "DataLink <optional text> <:: optional capability flags>"
+       */
+      capptr = strstr (recvstr, "::");
+      if ( capptr )
+	{
+	  /* Truncate server ID portion of string */
+	  *capptr = '\0';
+	  
+	  /* Move pointer to beginning of flags */
+	  capptr += 2;
+	  
+	  /* Move capptr up to first non-space character */
+	  while ( *capptr == ' ' )
+	    capptr++;
+	}
+      
+      /* Report received server ID */
+      dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, recvstr);
+      if ( capptr )
+	dl_log_r (dlconn, 1, 1, "[%s] capabilities: %s\n", dlconn->addr, capptr);
+      
+      /* Check capabilities flags */
+      if ( capptr )
+	{
+	  char *tptr;
+	  
+	  /* Parse protocol version flag: "DLPROTO:<#.#>" if present */
+	  if ( (tptr = strstr(capptr, "DLPROTO")) )
+	    {
+	      /* Parse protocol version as a float */
+	      ret = sscanf (tptr, "DLPROTO:%f", &dlconn->serverproto);
+	      
+	      if ( ret != 1 )
+		dl_log_r (dlconn, 1, 1,
+			  "[%s] could not parse protocol version from DLPROTO flag: %s\n",
+			  dlconn->addr, tptr);
+	    }
+	}
+    }
+
+  return 0;
+}  /* End of dl_getid() */
+
+
+/***************************************************************************
  * dl_position:
  *
  * Position client read position based on a packet ID and packet time.
@@ -159,7 +243,6 @@ int64_t
 dl_position_after (DLCP *dlconn, dltime_t datatime)
 {
   int64_t replyvalue = 0;
-  char pkttime[100];
   char reply[255];
   char header[255];
   int headerlen;
@@ -213,7 +296,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
   int64_t replyvalue = 0;
   char reply[255];
   char header[255];
-  int patternlen;
+  long int patternlen;
   int headerlen;
   int replylen;
   int rv;
@@ -227,7 +310,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
   patternlen = ( matchpattern ) ? strlen(matchpattern) : 0;
   
   /* Create packet header with command: "MATCH size" */
-  headerlen = snprintf (header, sizeof(header), "MATCH %lld",
+  headerlen = snprintf (header, sizeof(header), "MATCH %ld",
 			patternlen);
   
   /* Send command and pattern to server */
@@ -268,7 +351,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   int64_t replyvalue = 0;
   char reply[255];
   char header[255];
-  int patternlen;
+  long int patternlen;
   int headerlen;
   int replylen;
   int rv;
@@ -282,7 +365,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   patternlen = ( rejectpattern ) ? strlen(rejectpattern) : 0;
   
   /* Create packet header with command: "REJECT size" */
-  headerlen = snprintf (header, sizeof(header), "REJECT %lld",
+  headerlen = snprintf (header, sizeof(header), "REJECT %ld",
 			patternlen);
   
   /* Send command and pattern to server */
@@ -407,7 +490,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( ! strncmp (header, "PACKET", 6) )
     {
       /* Parse PACKET header */
-      rv = sscanf (header, "PACKET %s %lld %lld %ld",
+      rv = sscanf (header, "PACKET %s %lld %lld %d",
 		   packet->streamid, &(packet->pkttime),
 		   &(packet->datatime), &(packet->datasize));
       

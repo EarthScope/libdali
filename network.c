@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.030
+ * Version: 2008.034
  ***************************************************************************/
 
 #include <stdio.h>
@@ -38,8 +38,6 @@ int
 dl_connect (DLCP *dlconn)
 {
   int sock;
-  int on = 1;
-  int sockstat;
   long int nport;
   char nodename[300];
   char nodeport[100];
@@ -47,7 +45,7 @@ dl_connect (DLCP *dlconn)
   size_t addrlen;
   struct sockaddr addr;
   
-  if ( slp_sockstartup() )
+  if ( dlp_sockstartup() )
     {
       dl_log_r (dlconn, 2, 0, "could not initialize network sockets\n");
       return -1;
@@ -93,7 +91,7 @@ dl_connect (DLCP *dlconn)
     }
   
   /* Resolve server address */
-  if ( slp_getaddrinfo (nodename, nodeport, &addr, &addrlen) )
+  if ( dlp_getaddrinfo (nodename, nodeport, &addr, &addrlen) )
     {
       dl_log_r (dlconn, 2, 0, "cannot resolve hostname %s\n", nodename );
       return -1;
@@ -102,21 +100,21 @@ dl_connect (DLCP *dlconn)
   /* Create socket */
   if ( (sock = socket (PF_INET, SOCK_STREAM, 0)) < 0 )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] socket(): %s\n", dlconn->addr, slp_strerror ());
-      slp_sockclose (sock);
+      dl_log_r (dlconn, 2, 0, "[%s] socket(): %s\n", dlconn->addr, dlp_strerror ());
+      dlp_sockclose (sock);
       return -1;
     }
   
   /* Connect socket */
-  if ( (slp_sockconnect (sock, (struct sockaddr *) &addr, addrlen)) )
+  if ( (dlp_sockconnect (sock, (struct sockaddr *) &addr, addrlen)) )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] connect(): %s\n", dlconn->addr, slp_strerror ());
-      slp_sockclose (sock);
+      dl_log_r (dlconn, 2, 0, "[%s] connect(): %s\n", dlconn->addr, dlp_strerror ());
+      dlp_sockclose (sock);
       return -1;
     }
   
   /* Set socket to non-blocking */
-  if ( slp_socknoblock(sock) )
+  if ( dlp_socknoblock(sock) )
     {
       dl_log_r (dlconn, 2, 0, "Error setting socket to non-blocking\n");
       return -1;
@@ -128,9 +126,9 @@ dl_connect (DLCP *dlconn)
   dlconn->link = sock;
   
   /* Everything should be connected, exchange IDs */
-  if ( dl_exchangeID (dlconn) == -1 )
+  if ( dl_getid (dlconn, 1) == -1 )
     {
-      slp_sockclose (sock);
+      dlp_sockclose (sock);
       return -1;
     }
   
@@ -149,95 +147,12 @@ dl_disconnect (DLCP *dlconn)
 {
   if ( dlconn->link > 0 )
     {
-      slp_sockclose (dlconn->link);
+      dlp_sockclose (dlconn->link);
       dlconn->link = -1;
       
       dl_log_r (dlconn, 1, 1, "[%s] network socket closed\n", dlconn->addr);
     }
 }  /* End of dl_disconnect() */
-
-
-/***************************************************************************
- * dl_exchangeID:
- *
- * Send the ID command including the client ID and parse the
- * capability flags from the returned string.
- *
- * Returns -1 on errors, 0 on success.
- ***************************************************************************/
-int
-dl_exchangeID (DLCP *dlconn)
-{
-  int ret = 0;
-  int servcnt = 0;
-  int sitecnt = 0;
-  char sendstr[255];		/* Buffer for command strings */
-  char recvstr[255];		/* Buffer for server response */
-  char *capptr;                 /* Pointer to capabilities flags */  
-  char capflag = 0;             /* Capabilities are supported by server */
-  
-  /* Send ID command including client ID */
-  sprintf (sendstr, "ID %s", dlconn->clientid);
-  dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
-  
-  if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
-		      recvstr, sizeof(recvstr)) < 0 )
-    {
-      return -1;
-    }
-  
-  /* Verify DataLink signature in server response */
-  if ( strncasecmp (recvstr, "DATALINK", 8) )
-    {
-      dl_log_r (dlconn, 1, 1,
-                "[%s] unrecognized server ID: %8.8s\n",
-                dlconn->addr, recvstr);
-      return -1;
-    }
-  
-  /* Search for capabilities flags in server ID by looking for "::"
-   * The expected format of the complete server ID is:
-   * "DataLink <optional text> <:: optional capability flags>"
-   */
-  capptr = strstr (recvstr, "::");
-  if ( capptr )
-    {
-      /* Truncate server ID portion of string */
-      *capptr = '\0';
-      
-      /* Move pointer to beginning of flags */
-      capptr += 2;
-      
-      /* Move capptr up to first non-space character */
-      while ( *capptr == ' ' )
-	capptr++;
-    }
-  
-  /* Report received server ID */
-  dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, recvstr);
-  if ( capptr )
-    dl_log_r (dlconn, 1, 1, "[%s] capabilities: %s\n", dlconn->addr, capptr);
-  
-  /* Check capabilities flags */
-  if ( capptr )
-    {
-      char *tptr;
-      
-      /* Parse protocol version flag: "DLPROTO:<#.#>" if present */
-      if ( (tptr = strstr(capptr, "DLPROTO")) )
-	{
-	  /* This protocol specification overrides that from earlier in the server ID */
-	  ret = sscanf (tptr, "DLPROTO:%f", &dlconn->serverproto);
-	  
-	  if ( ret != 1 )
-	    dl_log_r (dlconn, 1, 1,
-		      "[%s] could not parse protocol version from DLPROTO flag: %s\n",
-		      dlconn->addr, tptr);
-	}
-    }
-  
-  return 0;
-}  /* End of dl_exchangeID() */
 
 
 /***************************************************************************
@@ -385,7 +300,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
       if ( (nrecv = recv(dlconn->link, bptr, readlen-nread, 0)) < 0 )
         {
           /* The only acceptable error is no data on non-blocking */
-	  if ( slp_noblockcheck() )
+	  if ( dlp_noblockcheck() )
 	    {
 	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
 			dlconn->addr, nrecv, dlp_strerror ());
@@ -440,7 +355,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
     }
   
   /* Receive synchronization bytes and header length */
-  if ( (bytesread = sl_recvdata (buffer, buffer, 3)) != 3 )
+  if ( (bytesread = dl_recvdata (buffer, buffer, 3)) != 3 )
     {
       return -1;
     }

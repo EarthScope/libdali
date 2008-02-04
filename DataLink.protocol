@@ -1,11 +1,13 @@
 
-
 All server-client exchange tokens are ASCII
 All exchanges are prefixed by a 3 byte sequence:
 'D', 'L' and a 1-byte unsigned integer (length of header)
 High-precision times are epochs times in microseconds
 
 Client commands:
+
+c  ID clientID
+  - Reply is header-only formulated as: "DataLink (vYYYY.DDD) :: DLPROTO:#.#"
 
 c  POSITION SET pktid hppkttime
 c  POSITION AFTER hptime
@@ -23,8 +25,6 @@ c  READ pktid
   - Reply with either PACKET or ERROR
 
   STREAM
-
-  ID
 
   INFO <info type>
 

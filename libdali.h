@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.033
+ * modified: 2008.034
  ***************************************************************************/
 
 
@@ -116,6 +116,7 @@ typedef struct DLPacket_s
 /* connection.c */
 extern DLCP *  dl_newdlcp (void);
 extern void    dl_freedlcp (DLCP *dlconn);
+extern int     dl_getid (DLCP *dlconn, int parseresp);
 extern int64_t dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime);
 extern int64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
 extern int64_t dl_match (DLCP *dlconn, char *matchpattern);

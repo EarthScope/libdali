@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.033
+ * Version: 2008.034
  ***************************************************************************/
 
 #include <stdio.h>
@@ -35,10 +35,7 @@ dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
   
   /* Duplicate stream ID */
   if ( ! (id = strdup(streamid)) )
-    {
-      lprintf (0, "SplitStreamID(): Error duplicating streamid");
-      return -1;
-    }
+    return -1;
   
   /* First truncate after the type if included */
   if ( (ptr = strrchr (id, '/')) )
