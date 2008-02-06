@@ -202,7 +202,7 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
  * prepended to the packet.
  *
  * The header length must be larger than 0 but the packet length can
- * be 0 resulting in a header-only packet commonly used for sendind
+ * be 0 resulting in a header-only packet commonly used for sending
  * commands.
  *
  * If 'resp' is not NULL then read up to 'resplen' bytes into 'resp'

@@ -590,7 +590,7 @@ dl_collect (DLCP *dlconn, DLPacket *dlpack, void *packet, size_t maxpacketlen)
 	    {
 	      dl_log_r (dlconn, 1, 2, "sending keepalive request\n");
 
-	      CHAD, use dl_getid() here.
+	      //CHAD, use dl_getid() here.
 
 	      if ( dl_send_info (dlconn, "ID", 3) != -1 )
 		{
