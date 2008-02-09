@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.034
+ * modified: 2008.037
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -590,16 +590,15 @@ dl_collect (DLCP *dlconn, DLPacket *dlpack, void *packet, size_t maxpacketlen)
 	    {
 	      dl_log_r (dlconn, 1, 2, "sending keepalive request\n");
 
-	      //CHAD, use dl_getid() here.
-
-	      if ( dl_send_info (dlconn, "ID", 3) != -1 )
+	      /* Request server ID as a keepalive packet exchange */
+	      if ( dl_getid (dlconn, "ID", 0) != -1 )
 		{
-		  dlconn->stat->query_mode = KeepAliveQuery;
-		  dlconn->stat->expect_info = 1;
 		  dlconn->stat->keepalive_trig = -1;
 		}
 	    }
 	  
+CHAD
+
 	  /* Check if an in-stream INFO request needs to be sent */
 	  if (dlconn->stat->dl_state == DL_DATA && !dlconn->stat->expect_info && dlconn->info)
 	    {
