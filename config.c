@@ -6,7 +6,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.032
+ * modified: 2008.039
  ***************************************************************************/
 
 #include <stdio.h>
@@ -32,7 +32,7 @@ dl_read_streamlist (DLCP *dlconn, const char *streamfile)
   char line[100];
   char *ptr;
   int streamfd;
-  int count;
+  int count = 0;
   int idx;
   
   /* Open the stream list file */

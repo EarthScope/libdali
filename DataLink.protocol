@@ -25,6 +25,7 @@ c  READ pktid
   - Reply with either PACKET or ERROR
 
   STREAM
+  ENDSTREAM
 
   INFO <info type>
 

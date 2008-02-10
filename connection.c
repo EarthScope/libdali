@@ -8,6 +8,10 @@
  * modified: 2008.037
  ***************************************************************************/
 
+// dl_collect, needs to send ENDSTREAM if endflag
+
+// dlconn->streaming needs to be set appropriately (in other routines?)
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -29,7 +33,7 @@ dl_newdlcp (void)
   DLCP *dlconn;
 
   dlconn = (DLCP *) malloc (sizeof(DLCP));
-
+  
   if ( dlconn == NULL )
     {
       dl_log_r (NULL, 2, 0, "dl_newdlcp(): error allocating memory\n");
@@ -39,35 +43,15 @@ dl_newdlcp (void)
   /* Set defaults */
   dlconn->addr         = 0;
   dlconn->clientid     = 0;
-  dlconn->terminate    = 0;
-  
-  dlconn->keepalive    = 0;
-  dlconn->netto        = 600;
-  dlconn->netdly       = 30;
-  
-  dlconn->serverproto  = 0.0;
+  dlconn->keepalive    = 600;
   dlconn->link         = -1;
-  
-  /* Allocate the associated persistent state struct */
-  dlconn->stat = (DLStat *) malloc (sizeof(DLStat));
-  
-  if ( ! dlconn->stat )
-    {
-      dl_log_r (NULL, 2, 0, "dl_newdlcp(): error allocating memory\n");
-      free (dlconn);
-      return NULL;
-    }
-    
-  dlconn->stat->pktid          = 0;
-  dlconn->stat->pkttime        = 0;
-  
-  dlconn->stat->netto_trig     = -1;
-  dlconn->stat->netdly_trig    = 0;
-  dlconn->stat->keepalive_trig = -1;
-  
-  dlconn->stat->netto_time     = 0.0;
-  dlconn->stat->netdly_time    = 0.0;
-  dlconn->stat->keepalive_time = 0.0;
+  dlconn->serverproto  = 0.0;
+  dlconn->pktid        = 0;
+  dlconn->pkttime      = 0;
+  dlconn->keepalive_trig = -1;
+  dlconn->keepalive_time = 0.0;
+  dlconn->terminate    = 0;
+  dlconn->streaming    = 0;
   
   dlconn->log = NULL;
   
@@ -86,9 +70,6 @@ dl_freedlcp (DLCP *dlconn)
 {
   if ( dlconn->addr )
     free (dlconn->addr);
-  
-  if ( dlconn->stat )
-    free (dlconn->stat);
   
   if ( dlconn->log )
     free (dlconn->log);
@@ -114,7 +95,8 @@ dl_getid (DLCP *dlconn, int parseresp)
   char *capptr;                 /* Pointer to capabilities flags */  
   
   /* Send ID command including client ID */
-  sprintf (sendstr, "ID %s", dlconn->clientid);
+  snprintf (sendstr, sizeof(sendstr), "ID %s",
+	    (dlconn->clientid) ? dlconn->clientid : "");
   dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
   
   if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
@@ -452,13 +434,14 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
 /***************************************************************************
  * dl_read:
  *
- * Request and receive a packet from the server.
+ * Receive a packet (header and data) optionally requesting a specific
+ * packet if pktid > 0.
  *
  * Returns 0 on success and -1 on error.
  ***************************************************************************/
 int
 dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
-	 int32_t maxdatalen)
+	 size_t maxdatalen)
 {
   char header[255];
   int headerlen;
@@ -470,14 +453,18 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( dlconn->link <= 0 )
     return -1;
   
-  /* Create packet header with command: "READ pktid" */
-  headerlen = snprintf (header, sizeof(header), "READ %lld", pktid);
-  
-  /* Send command and packet to server */
-  if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
+  /* Request a specific packet */
+  if ( pktid > 0 )
     {
-      dl_log_r (dlconn, 2, 0, "problem sending READ command\n");
-      return -1;
+      /* Create packet header with command: "READ pktid" */
+      headerlen = snprintf (header, sizeof(header), "READ %lld", pktid);
+      
+      /* Send command and packet to server */
+      if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
+	{
+	  dl_log_r (dlconn, 2, 0, "problem sending READ command\n");
+	  return -1;
+	}
     }
   
   /* Receive packet header */
@@ -539,9 +526,9 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 /***************************************************************************
  * dl_collect:
  *
- * Send the STREAM command and manage a connection to a Datalink
- * server based on the values given in the dlconn struct and collect
- * data.
+ * Send the STREAM command and collect packets sent by the server.
+ * Keep alive packets are sent to the server based on the
+ * DLCP.keepalive parameter.
  *
  * Designed to run in a tight loop at the heart of a client program,
  * this function will return every time a packet is received.  On
@@ -553,342 +540,189 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
  * sequence completed.  Returns DLERROR when an error occurred.
  ***************************************************************************/
 int
-dl_collect (DLCP *dlconn, DLPacket *dlpack, void *packet, size_t maxpacketlen)
+dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
+	    size_t maxdatalen, int8_t endflag)
 {
-  dl_time_t now;
+  dltime_t now;
+  char header[255];
+  int  headerlen;
   int  bytesread;
   char retpacket;
-  
+  int  rv;
+
   /* For select()ing during the read loop */
   struct timeval select_tv;
   fd_set         select_fd;
   int            select_ret;
   
-  if ( ! dlconn || ! dlpack || ! packet )
+  if ( ! dlconn || ! packet || ! packetdata )
     return DLERROR;
   
   if ( dlconn->link == -1 )
     return DLERROR;
   
-  /* Start the primary loop  */
+  /* If not streaming send the STREAM command */
+  if ( ! dlconn->streaming && ! endflag )
+    {
+      /* Create packet header with command: "STREAM" */
+      headerlen = snprintf (header, sizeof(header), "STREAM");
+      
+      /* Send command to server */
+      if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
+	{
+	  dl_log_r (dlconn, 2, 0, "problem sending STREAM command\n");
+	  return DLERROR;
+	}
+      
+      dlconn->streaming = 1;
+      dlconn->keepalive_trig = -1;
+      dl_log_r (dlconn, 1, 2, "STREAM command sent to server");
+    }
+  
+  /* If streaming and end is requested send the ENDSTREAM command */
+  if ( dlconn->streaming == 1 && endflag )
+    {
+      /* Create packet header with command: "ENDSTREAM" */
+      headerlen = snprintf (header, sizeof(header), "ENDSTREAM");
+      
+      /* Send command to server */
+      if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
+	{
+	  dl_log_r (dlconn, 2, 0, "problem sending ENDSTREAM command\n");
+	  return DLERROR;
+	}
+      
+      dlconn->streaming = -1;
+      dlconn->keepalive_trig = -1;
+      dl_log_r (dlconn, 1, 2, "ENDSTREAM command sent to server");
+    }
+  
+  /* Start the primary loop */
   for (;;)
     {
       if ( ! dlconn->terminate )
 	{
-	  /* Check for network timeout */
-	  if ( dlconn->netto && dlconn->stat->netto_trig > 0 )
-	    {
-	      dl_log_r (dlconn, 1, 0, "network timeout (%ds), reconnecting in %ds\n",
-			dlconn->netto, dlconn->netdly);
-	      dlconn->link = dl_disconnect (dlconn);
-	      dlconn->stat->netto_trig = -1;
-	      dlconn->stat->netdly_trig = -1;
-	    }
-	  
 	  /* Check if a keepalive packet needs to be sent */
-	  if ( dlconn->keepalive && dlconn->stat->keepalive_trig > 0 )
+	  if ( dlconn->keepalive && dlconn->keepalive_trig > 0 )
 	    {
-	      dl_log_r (dlconn, 1, 2, "sending keepalive request\n");
-
-	      /* Request server ID as a keepalive packet exchange */
-	      if ( dl_getid (dlconn, "ID", 0) != -1 )
-		{
-		  dlconn->stat->keepalive_trig = -1;
-		}
-	    }
-	  
-CHAD
-
-	  /* Check if an in-stream INFO request needs to be sent */
-	  if (dlconn->stat->dl_state == DL_DATA && !dlconn->stat->expect_info && dlconn->info)
-	    {
-	      if ( dl_send_info (dlconn, dlconn->info, 1) != -1 )
-		{
-		  dlconn->stat->query_mode = InfoQuery;
-		  dlconn->stat->expect_info = 1;
-		}
-	      else
-		{
-		  dlconn->stat->query_mode = NoQuery;
-		}
+	      dl_log_r (dlconn, 1, 2, "Sending keepalive packet\n");
 	      
-	      dlconn->info = NULL;
-	    }
-	  
-	  /* Throttle the loop while delaying */
-	  if (dlconn->stat->dl_state == DL_DOWN && dlconn->stat->netdly_trig > 0)
-	    {
-	      slp_usleep (500000);
-	    }
-	  
-	  /* Connect to remote Datalink */
-	  if (dlconn->stat->dl_state == DL_DOWN && dlconn->stat->netdly_trig == 0)
-	    {
-	      if (dl_connect (dlconn, 1) != -1)
-		{
-		  dlconn->stat->dl_state = DL_UP;
-		}
-	      dlconn->stat->netto_trig = -1;
-	      dlconn->stat->netdly_trig = -1;
-	      dlconn->stat->keepalive_trig = -1;
-	    }
-	  
-	  /* Negotiate/configure the connection */
-	  if ( dlconn->stat->dl_state == DL_UP )
-	    {
-	      int slconfret = 0;
+	      /* Send ID as a keepalive packet exchange */
+	      snprintf (sendstr, sizeof(sendstr), "ID %s",
+			(dlconn->clientid) ? dlconn->clientid : "");
 	      
-	      /* Only send query if a query is set and no streams are defined,
-	       * if streams are defined we'll send the query after configuration.
-	       */
-	      if (dlconn->info && dlconn->streams == NULL)
+	      if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr),
+				  NULL, 0, NULL, 0) == 0 )
 		{
-		  if ( dl_send_info (dlconn, dlconn->info, 1) != -1 )
+		  dlconn->keepalive_trig = -1;
+		}
+	    }
+	}
+      
+      /* Poll the server */
+      FD_ZERO (&select_fd);
+      FD_SET ((unsigned int)dlconn->link, &select_fd);
+      select_tv.tv_sec = 0;
+      select_tv.tv_usec = 500000;  /* Block up to 0.5 seconds */
+      
+      select_ret = select ((dlconn->link + 1), &select_fd, NULL, NULL, &select_tv);
+      
+      /* Check the return from select(), an interrupted system call error
+	 will be reported if a signal handler was used.  If the terminate
+	 flag is set this is not an error. */
+      if ( select_ret > 0 )
+	{
+	  if ( ! FD_ISSET (dlconn->link, &select_fd) )
+	    {
+	      dl_log_r (dlconn, 2, 0, "select() reported data but socket not in set!\n");
+	    }
+	  else
+	    {
+	      //CHAD
+	      
+	      /* Receive packet header */
+	      if ( (rv = dl_recvheader (dlconn, header, sizeof(header))) < 0 )
+		{
+		  dl_log_r (dlconn, 2, 0, "problem receving packet header\n");
+		  return -1;
+		}
+  
+	      if ( ! strncmp (header, "PACKET", 6) )
+		{
+		  /* Parse PACKET header */
+		  rv = sscanf (header, "PACKET %s %lld %lld %d",
+			       packet->streamid, &(packet->pkttime),
+			       &(packet->datatime), &(packet->datasize));
+		  
+		  if ( rv != 4 )
 		    {
-		      dlconn->stat->query_mode = InfoQuery;
-		      dlconn->stat->expect_info = 1;
-		    }
-		  else
-		    {
-		      dlconn->stat->query_mode = NoQuery;
-		      dlconn->stat->expect_info = 0;
+		      dl_log_r (dlconn, 2, 0, "cannot parse PACKET header\n");
+		      return -1;
 		    }
 		  
-		  dlconn->info = NULL;
-		}
-	      else
-		{
-		  slconfret = dl_configlink (dlconn);
-		  dlconn->stat->expect_info = 0;
-		}
-	      
-	      if (slconfret != -1)
-		{
-		  dlconn->stat->recptr = 0;    /* initialize the data buffer pointers */
-		  dlconn->stat->sendptr = 0;
-		  dlconn->stat->dl_state = DL_DATA;
-		}
-	      else
-		{
-		  dl_log_r (dlconn, 2, 0, "negotiation with remote Datalink failed\n");
-		  dlconn->link = dl_disconnect (dlconn);
-		  dlconn->stat->netdly_trig = -1;
-		}
-	    }
-	}
-      else /* We are terminating */
-	{
-	  if (dlconn->link != -1)
-	    {
-	      dlconn->link = dl_disconnect (dlconn);
-	    }
-
-	  dlconn->stat->dl_state = DL_DOWN;
-	}
-
-      /* DEBUG
-      dl_log_r (dlconn, 1, 0, "link: %d, sendptr: %d, recptr: %d, diff: %d\n",
-                dlconn->link, dlconn->stat->sendptr, dlconn->stat->recptr,
-		(dlconn->stat->recptr - dlconn->stat->sendptr) );
-      */
-	  
-      /* Process data in buffer */
-      while (dlconn->stat->recptr - dlconn->stat->sendptr >= SLHEADSIZE + SLRECSIZE)
-	{
-	  retpacket = 1;
-	  
-	  /* Check for an INFO packet */
-	  if (!strncmp (&dlconn->stat->databuf[dlconn->stat->sendptr], INFOSIGNATURE, 6))
-	    {
-	      char terminator;
-	      
-	      terminator = (dlconn->stat->databuf[dlconn->stat->sendptr + SLHEADSIZE - 1] != '*');
-	      
-	      if ( !dlconn->stat->expect_info )
-		{
-		  dl_log_r (dlconn, 2, 0, "unexpected INFO packet received, skipping\n");
-		}
-	      else
-		{
-		  if ( terminator )
+		  if ( packet->datasize > maxdatalen )
 		    {
-		      dlconn->stat->expect_info = 0;
+		      dl_log_r (dlconn, 2, 0,
+				"packet data larger (%ld) than receiving buffer (%ld)\n",
+				packet->datasize, maxdatalen);
+		      return -1;
 		    }
 		  
-		  /* Keep alive packets are not returned */
-		  if ( dlconn->stat->query_mode == KeepAliveQuery )
+		  /* Receive packet data */
+		  if ( dl_recvdata (dlconn, packetdata, packet->datasize) != packet->datasize )
 		    {
-		      retpacket = 0;
-		      
-		      if ( !terminator )
-			{
-			  dl_log_r (dlconn, 2, 0, "non-terminated keep-alive packet received!?!\n");
-			}
-		      else
-			{
-			  dl_log_r (dlconn, 1, 2, "keepalive packet received\n");
-			}
+		      dl_log_r (dlconn, 2, 0, "problem receiving packet data\n");
+		      return -1;
 		    }
 		}
-	      
-	      if ( dlconn->stat->query_mode != NoQuery )
+	      else if ( ! strncmp (header, "ERROR", 5) )
 		{
-		  dlconn->stat->query_mode = NoQuery;
-		}
-	    }
-	  else    /* Update the stream chain entry if not an INFO packet */
-	    {
-	      if ( (update_stream (dlconn, (DLPacket *) &dlconn->stat->databuf[dlconn->stat->sendptr])) == -1 )
-		{
-		  /* If updating didn't work the packet is broken */
-		  retpacket = 0;
-		}
-	    }
-	  
-	  /* Increment the send pointer */
-	  dlconn->stat->sendptr += (SLHEADSIZE + SLRECSIZE);
-	  
-	  /* Return packet */
-	  if ( retpacket )
-	    {
-	      *dlpack = (DLPacket *) &dlconn->stat->databuf[dlconn->stat->sendptr - (SLHEADSIZE + SLRECSIZE)];
-	      return DLPACKET;
-	    }
-	}
-      
-      /* A trap door for terminating, all complete data packets from the buffer
-	 have been sent to the caller */
-      if ( dlconn->terminate ) {
-	return SLTERMINATE;
-      }
-      
-      /* After processing the packet buffer shift the data */
-      if ( dlconn->stat->sendptr )
-	    {
-	      memmove (dlconn->stat->databuf,
-		       &dlconn->stat->databuf[dlconn->stat->sendptr],
-		       dlconn->stat->recptr - dlconn->stat->sendptr);
-	      
-	      dlconn->stat->recptr -= dlconn->stat->sendptr;
-	      dlconn->stat->sendptr = 0;
-	    }
-      
-      /* Catch cases where the data stream stopped */
-      if ((dlconn->stat->recptr - dlconn->stat->sendptr) == 7 &&
-	  !strncmp (&dlconn->stat->databuf[dlconn->stat->sendptr], "ERROR\r\n", 7))
-	{
-	  dl_log_r (dlconn, 2, 0, "Datalink server reported an error with the last command\n");
-	  dlconn->link = dl_disconnect (dlconn);
-	  return SLTERMINATE;
-	}
-      
-      if ((dlconn->stat->recptr - dlconn->stat->sendptr) == 3 &&
-	  !strncmp (&dlconn->stat->databuf[dlconn->stat->sendptr], "END", 3))
-	{
-	  dl_log_r (dlconn, 1, 1, "End of buffer or selected time window\n");
-	  dlconn->link = dl_disconnect (dlconn);
-	  return SLTERMINATE;
-	}
-      
-      /* Read incoming data if connection is up */
-      if (dlconn->stat->dl_state == DL_DATA)
-	{
-	  /* Check for more available data from the socket */
-	  bytesread = 0;
-
-	  /* Poll the server */
-	  FD_ZERO (&select_fd);
-	  FD_SET ((unsigned int)dlconn->link, &select_fd);
-	  select_tv.tv_sec = 0;
-	  select_tv.tv_usec = 500000;  /* Block up to 0.5 seconds */
-
-	  select_ret = select ((dlconn->link + 1), &select_fd, NULL, NULL, &select_tv);
-
-	  /* Check the return from select(), an interrupted system call error
-	     will be reported if a signal handler was used.  If the terminate
-	     flag is set this is not an error. */
-	  if (select_ret > 0)
-	    {
-	      if (!FD_ISSET (dlconn->link, &select_fd))
-		{
-		  dl_log_r (dlconn, 2, 0, "select() reported data but socket not in set!\n");
+		  /* Reply message, if sent, will be placed into the header buffer */
+		  rv = dl_handlereply (dlconn, header, sizeof(header), NULL);
+		  
+		  /* Log server reply message */
+		  if ( rv >= 0 )
+		    dl_log_r (dlconn, 2, 0, "%s\n", header);
+		  
+		  return -1;
 		}
 	      else
 		{
-		  bytesread = dl_recvdata (dlconn, (void *) &dlconn->stat->databuf[dlconn->stat->recptr],
-					   BUFSIZE - dlconn->stat->recptr, dlconn->sladdr);
+		  dl_log_r (dlconn, 2, 0, "Unrecognized reply string %.6s\n", header);
+		  return -1;
 		}
-	    }
-	  else if (select_ret < 0 && ! dlconn->terminate)
-	    {
-	      dl_log_r (dlconn, 2, 0, "select() error: %s\n", slp_strerror ());
-	      dlconn->link = dl_disconnect (dlconn);
-	      dlconn->stat->netdly_trig = -1;
-	    }
-
-	  if (bytesread < 0)            /* read() failed */
-	    {
-	      dlconn->link = dl_disconnect (dlconn);
-	      dlconn->stat->netdly_trig = -1;
-	    }
-	  else if (bytesread > 0)	/* Data is here, process it */
-	    {
-	      dlconn->stat->recptr += bytesread;
-
-	      /* Reset the timeout and keepalive timers */
-	      dlconn->stat->netto_trig     = -1;
-	      dlconn->stat->keepalive_trig = -1;
+	      
+	      //CHAD, receive header, process packet and either PACKET or ID
+	      
+	      //if ( dl_read (dlconn, 0, packet, packet, maxpacketlen) )
+	      
+	      dlconn->keepalive_trig = -1;
 	    }
 	}
-
+      else if ( select_ret < 0 && ! dlconn->terminate )
+	{
+	  dl_log_r (dlconn, 2, 0, "select() error: %s\n", dlp_strerror ());
+	  dlconn->stat->netdly_trig = -1;
+	}
+      
       /* Update timing variables */
-      current_time = dl_dtime ();
-
-      /* Network timeout timing logic */
-      if (dlconn->netto)
-	{
-	  if (dlconn->stat->netto_trig == -1)	/* reset timer */
-	    {
-	      dlconn->stat->netto_time = current_time;
-	      dlconn->stat->netto_trig = 0;
-	    }
-	  else if (dlconn->stat->netto_trig == 0 &&
-		   (current_time - dlconn->stat->netto_time) > dlconn->netto)
-	    {
-	      dlconn->stat->netto_trig = 1;
-	    }
-	}
+      now = dl_dtime ();
       
       /* Keepalive/heartbeat interval timing logic */
-      if (dlconn->keepalive)
+      if ( dlconn->keepalive )
 	{
-	  if (dlconn->stat->keepalive_trig == -1)	/* reset timer */
+	  if (dlconn->keepalive_trig == -1)  /* reset timer */
 	    {
-	      dlconn->stat->keepalive_time = current_time;
-	      dlconn->stat->keepalive_trig = 0;
+	      dlconn->keepalive_time = current_time;
+	      dlconn->keepalive_trig = 0;
 	    }
 	  else if (dlconn->stat->keepalive_trig == 0 &&
-		   (current_time - dlconn->stat->keepalive_time) > dlconn->keepalive)
+		   (now - dlconn->stat->keepalive_time) > dlconn->keepalive)
 	    {
-	      dlconn->stat->keepalive_trig = 1;
+	      dlconn->keepalive_trig = 1;
 	    }
 	}
-      
-      /* Network delay timing logic */
-      if (dlconn->netdly)
-	{
-	  if (dlconn->stat->netdly_trig == -1)	/* reset timer */
-	    {
-	      dlconn->stat->netdly_time = current_time;
-	      dlconn->stat->netdly_trig = 1;
-	    }
-	  else if (dlconn->stat->netdly_trig == 1 &&
-		   (current_time - dlconn->stat->netdly_time) > dlconn->netdly)
-	    {
-	      dlconn->stat->netdly_trig = 0;
-	    }
-	}
-    }				/* End of primary loop */
+    }  /* End of primary loop */
 }  /* End of dl_collect() */
 
 
@@ -909,12 +743,13 @@ CHAD
  * SLTERMINATE is returned and the dlpack pointer is set to NULL.
  ***************************************************************************/
 int
-dl_collect_nb (DLCP *dlconn, DLPacket ** dlpack) 
+dl_collect_nb (DLCP *dlconn, DLPacket *dlpack, void *packet,
+	       size_t maxpacketlen, int8_t endflag)
 {
   int    bytesread;
   double current_time;
   char   retpacket;
-
+  
   *dlpack = NULL;
 
   /* Check if the info was set */
