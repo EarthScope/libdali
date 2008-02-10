@@ -608,10 +608,10 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	      dl_log_r (dlconn, 1, 2, "Sending keepalive packet\n");
 	      
 	      /* Send ID as a keepalive packet exchange */
-	      snprintf (sendstr, sizeof(sendstr), "ID %s",
-			(dlconn->clientid) ? dlconn->clientid : "");
+	      headerlen = snprintf (header, sizeof(header), "ID %s",
+				    (dlconn->clientid) ? dlconn->clientid : "");
 	      
-	      if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr),
+	      if ( dl_sendpacket (dlconn, header, headerlen,
 				  NULL, 0, NULL, 0) == 0 )
 		{
 		  dlconn->keepalive_trig = -1;

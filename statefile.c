@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.030
+ * modified: 2008.040
  ***************************************************************************/
 
 #include <stdio.h>
@@ -46,7 +46,7 @@ dl_savestate (DLCP *dlconn, const char *statefile)
   
   /* Write state information: <server address> <packet ID> <packet time> */
   linelen = snprintf (line, sizeof(line), "%s %lld %lld\n",
-		      dlconn->addr, dlconn->stat->pktid, dlconn->stat->pkttime);
+		      dlconn->addr, dlconn->pktid, dlconn->pkttime);
   
   if ( write (statefd, line, linelen) != linelen )
     {
@@ -124,8 +124,8 @@ dl_recoverstate (DLCP *dlconn, const char *statefile)
       /* Check for a matching server address and set connection values if found */
       if ( ! strncmp (dlconn->addr, addrstr, sizeof(addrstr)) )
 	{
-	  dlconn->stat->pktid = pktid;
-	  dlconn->stat->pkttime = pkttime;
+	  dlconn->pktid = pktid;
+	  dlconn->pkttime = pkttime;
 	  
 	  found = 1;
 	  break;

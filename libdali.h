@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.034
+ * modified: 2008.040
  ***************************************************************************/
 
 
@@ -63,21 +63,6 @@ extern "C" {
 /* Require a large (>= 64-bit) integer type for dltime_t */
 typedef int64_t dltime_t;
 
-/* Persistent connection state information */
-typedef struct DLStat_s
-{
-  int64_t  pktid;                 /* Packet ID of last packet received */
-  dltime_t pkttime;               /* Packet time of last packet received */
-  
-  int8_t   netto_trig;            /* Network timeout trigger */
-  int8_t   netdly_trig;           /* Network re-connect delay trigger */
-  int8_t   keepalive_trig;        /* Send keepalive trigger */
-  
-  dltime_t netto_time;            /* Network timeout time stamp */
-  dltime_t netdly_time;           /* Network re-connect delay time stamp */
-  dltime_t keepalive_time;        /* Keepalive time stamp */  
-} DLStat;
-
 /* Logging parameters */
 typedef struct DLLog_s
 {
@@ -93,15 +78,18 @@ typedef struct DLCP_s
 {
   char       *addr;             /* The host:port of DataLink server */
   char       *clientid;         /* Client program ID */
-  int8_t      terminate;        /* Boolean flag to control connection termination */
-
   int         keepalive;        /* Interval to send keepalive/heartbeat (secs) */
-  int         netto;            /* Network timeout (secs) */
-  int         netdly;           /* Network reconnect delay (secs) */
-
-  float       serverproto;      /* Server version of the DataLink protocol */
+  
+  /* Connection parameters maintained interally */
   int         link;		/* The network socket descriptor */
-  DLStat     *stat;             /* Persistent state information */
+  float       serverproto;      /* Server version of the DataLink protocol */
+  int64_t     pktid;            /* Packet ID of last packet received */
+  dltime_t    pkttime;          /* Packet time of last packet received */
+  int8_t      keepalive_trig;   /* Send keepalive trigger */
+  dltime_t    keepalive_time;   /* Keepalive time stamp */
+  int8_t      terminate;        /* Boolean flag to control connection termination */
+  int8_t      streaming;        /* Boolean flag to indicate streaming status */
+  
   DLLog      *log;              /* Logging parameters */
 } DLCP;
 
@@ -125,9 +113,11 @@ extern int64_t dl_reject (DLCP *dlconn, char *rejectpattern);
 extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen,
 			 char *streamid, dltime_t datatime, int ack);
 extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
-			void *packetdata, int32_t maxdatalen);
-extern int     dl_collect (DLCP *dlconn, DLPacket ** dlpack);
-extern int     dl_collect_nb (DLCP *dlconn, DLPacket ** dlpack);
+			void *packetdata, size_t maxdatalen);
+extern int     dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
+			   size_t maxdatalen, int8_t endflag);
+extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
+			      size_t maxdatalen, int8_t endflag);
 extern int     dl_request_info (DLCP *dlconn, const char * infostr);
 extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
 extern void    dl_terminate (DLCP *dlconn);
