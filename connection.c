@@ -5,10 +5,8 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.037
+ * modified: 2008.041
  ***************************************************************************/
-
-// dl_collect, needs to send ENDSTREAM if endflag
 
 // dlconn->streaming needs to be set appropriately (in other routines?)
 
