@@ -24,8 +24,8 @@ c  WRITE streamid hpdatatime flags size|<packet data of length size>
 c  READ pktid
   - Reply with either PACKET or ERROR
 
-  STREAM
-  ENDSTREAM
+c  STREAM
+c  ENDSTREAM
 
   INFO <info type>
 
@@ -40,5 +40,5 @@ INFO size|<XML info data of length size>
 
 Returned packets:
 
-S  PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+s  PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
 

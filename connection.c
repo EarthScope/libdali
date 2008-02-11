@@ -16,7 +16,7 @@
 #include <string.h>
 
 #include "libdali.h"
-
+#include "portable.h"
 
 /***************************************************************************
  * dl_newdlcp:
@@ -439,7 +439,7 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
  ***************************************************************************/
 int
 dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
-	 size_t maxdatalen)
+	 size_t maxdatasize)
 {
   char header[255];
   int headerlen;
@@ -485,11 +485,11 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 	  return -1;
 	}
       
-      if ( packet->datasize > maxdatalen )
+      if ( packet->datasize > maxdatasize )
 	{
 	  dl_log_r (dlconn, 2, 0,
 		    "packet data larger (%ld) than receiving buffer (%ld)\n",
-		    packet->datasize, maxdatalen);
+		    packet->datasize, maxdatasize);
 	  return -1;
 	}
       
@@ -539,15 +539,13 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
  ***************************************************************************/
 int
 dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
-	    size_t maxdatalen, int8_t endflag)
+	    size_t maxdatasize, int8_t endflag)
 {
   dltime_t now;
   char header[255];
   int  headerlen;
-  int  bytesread;
-  char retpacket;
   int  rv;
-
+  
   /* For select()ing during the read loop */
   struct timeval select_tv;
   fd_set         select_fd;
@@ -610,10 +608,13 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 				    (dlconn->clientid) ? dlconn->clientid : "");
 	      
 	      if ( dl_sendpacket (dlconn, header, headerlen,
-				  NULL, 0, NULL, 0) == 0 )
+				  NULL, 0, NULL, 0) < 0 )
 		{
-		  dlconn->keepalive_trig = -1;
+		  dl_log_r (dlconn, 2, 0, "problem sending keepalive packet\n");
+		  return DLERROR;
 		}
+	      
+	      dlconn->keepalive_trig = -1;
 	    }
 	}
       
@@ -636,15 +637,13 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	    }
 	  else
 	    {
-	      //CHAD
-	      
 	      /* Receive packet header */
 	      if ( (rv = dl_recvheader (dlconn, header, sizeof(header))) < 0 )
 		{
 		  dl_log_r (dlconn, 2, 0, "problem receving packet header\n");
-		  return -1;
+		  return DLERROR;
 		}
-  
+	      
 	      if ( ! strncmp (header, "PACKET", 6) )
 		{
 		  /* Parse PACKET header */
@@ -655,44 +654,41 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 		  if ( rv != 4 )
 		    {
 		      dl_log_r (dlconn, 2, 0, "cannot parse PACKET header\n");
-		      return -1;
+		      return DLERROR;
 		    }
 		  
-		  if ( packet->datasize > maxdatalen )
+		  if ( packet->datasize > maxdatasize )
 		    {
 		      dl_log_r (dlconn, 2, 0,
 				"packet data larger (%ld) than receiving buffer (%ld)\n",
-				packet->datasize, maxdatalen);
-		      return -1;
+				packet->datasize, maxdatasize);
+		      return DLERROR;
 		    }
 		  
 		  /* Receive packet data */
 		  if ( dl_recvdata (dlconn, packetdata, packet->datasize) != packet->datasize )
 		    {
 		      dl_log_r (dlconn, 2, 0, "problem receiving packet data\n");
-		      return -1;
+		      return DLERROR;
 		    }
+		  
+		  return DLPACKET;
 		}
-	      else if ( ! strncmp (header, "ERROR", 5) )
+	      else if ( ! strncmp (header, "ID", 2) )
 		{
-		  /* Reply message, if sent, will be placed into the header buffer */
-		  rv = dl_handlereply (dlconn, header, sizeof(header), NULL);
-		  
-		  /* Log server reply message */
-		  if ( rv >= 0 )
-		    dl_log_r (dlconn, 2, 0, "%s\n", header);
-		  
-		  return -1;
+		  dl_log_r (dlconn, 1, 2, "Received keepalive (ID) from server\n");
+		}
+	      else if ( ! strncmp (header, "ENDSTREAM", 9) )
+		{
+		  dl_log_r (dlconn, 1, 2, "Received end-of-stream from server\n");
+		  dlconn->streaming = 0;
+		  return DLTERMINATE;
 		}
 	      else
 		{
-		  dl_log_r (dlconn, 2, 0, "Unrecognized reply string %.6s\n", header);
-		  return -1;
+		  dl_log_r (dlconn, 2, 0, "Unrecognized packet header %.6s\n", header);
+		  return DLERROR;
 		}
-	      
-	      //CHAD, receive header, process packet and either PACKET or ID
-	      
-	      //if ( dl_read (dlconn, 0, packet, packet, maxpacketlen) )
 	      
 	      dlconn->keepalive_trig = -1;
 	    }
@@ -700,22 +696,22 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       else if ( select_ret < 0 && ! dlconn->terminate )
 	{
 	  dl_log_r (dlconn, 2, 0, "select() error: %s\n", dlp_strerror ());
-	  dlconn->stat->netdly_trig = -1;
+	  return DLERROR;
 	}
       
       /* Update timing variables */
-      now = dl_dtime ();
+      now = dlp_time ();
       
       /* Keepalive/heartbeat interval timing logic */
       if ( dlconn->keepalive )
 	{
 	  if (dlconn->keepalive_trig == -1)  /* reset timer */
 	    {
-	      dlconn->keepalive_time = current_time;
+	      dlconn->keepalive_time = now;
 	      dlconn->keepalive_trig = 0;
 	    }
-	  else if (dlconn->stat->keepalive_trig == 0 &&
-		   (now - dlconn->stat->keepalive_time) > dlconn->keepalive)
+	  else if (dlconn->keepalive_trig == 0 &&
+		   (now - dlconn->keepalive_time) > dlconn->keepalive)
 	    {
 	      dlconn->keepalive_trig = 1;
 	    }

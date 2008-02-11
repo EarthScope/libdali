@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.030
+ * modified: 2008.041
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -343,57 +343,61 @@ dlp_strerror (void)
 
 
 /***************************************************************************
- * dlp_dtime:
+ * dlp_time:
  *
- * Get the current time from the system as Unix/POSIX epoch time with double
- * precision.  On the WIN32 platform this function has millisecond
- * resulution, on *nix platforms this function has microsecond resolution.
+ * Get the current time from the system as a dltime_t value.  On the
+ * WIN32 platform this function has millisecond resulution, on *nix
+ * platforms this function has microsecond resolution.
  *
  * Return a double precision Unix/POSIX epoch time.
  ***************************************************************************/
-double
-dlp_dtime (void)
+int64_t
+dlp_time (void)
 {
 #if defined(DLP_WIN32)
-
+  
   static const __int64 SECS_BETWEEN_EPOCHS = 11644473600;
   static const __int64 SECS_TO_100NS = 10000000; /* 10^7 */
-
+  
+  __int64 dltime;
   __int64 UnixTime;
   SYSTEMTIME SystemTime;
   FILETIME FileTime;
-  double depoch;
-
+  
   GetSystemTime(&SystemTime);
   SystemTimeToFileTime(&SystemTime, &FileTime);
-
+  
   /* Get the full win32 epoch value, in 100ns */
   UnixTime = ((__int64)FileTime.dwHighDateTime << 32) + 
     FileTime.dwLowDateTime;
-
+  
   /* Convert to the Unix epoch */
   UnixTime -= (SECS_BETWEEN_EPOCHS * SECS_TO_100NS);
   
   UnixTime /= SECS_TO_100NS; /* now convert to seconds */
   
-  if ( (double)UnixTime != UnixTime )
-    {
-      dl_log_r (NULL, 2, 0, "dlp_dtime(): resulting value is too big for a double value\n");
-    }
+  dltime = ((__int64)UnixTime * DLTMODULUS) +
+    ((__int64)SystemTime.wMilliseconds * (DLTMODULUS/1000));
   
-  depoch = (double) UnixTime + ((double) SystemTime.wMilliseconds / 1000.0);
-
-  return depoch;
-
+  return dltime;
+  
 #else
-
+  
+  int64_t dltime;
   struct timeval tv;
   
-  gettimeofday (&tv, (struct timezone *) 0);
-  return ((double) tv.tv_sec + ((double) tv.tv_usec / 1000000.0));
-
+  if ( gettimeofday (&tv, (struct timezone *) 0) )
+    {
+      return DLTERROR;
+    }
+  
+  dltime = ((int64_t)tv.tv_sec * DLTMODULUS) +
+    ((int64_t)tv.tv_usec * (DLTMODULUS/1000000));
+  
+  return dltime;
+  
 #endif
-}  /* End of dlp_dtime() */
+}  /* End of dlp_time() */
 
 
 /***************************************************************************

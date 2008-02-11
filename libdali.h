@@ -113,11 +113,11 @@ extern int64_t dl_reject (DLCP *dlconn, char *rejectpattern);
 extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen,
 			 char *streamid, dltime_t datatime, int ack);
 extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
-			void *packetdata, size_t maxdatalen);
+			void *packetdata, size_t maxdatasize);
 extern int     dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
-			   size_t maxdatalen, int8_t endflag);
+			   size_t maxdatasize, int8_t endflag);
 extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
-			      size_t maxdatalen, int8_t endflag);
+			      size_t maxdatasize, int8_t endflag);
 extern int     dl_request_info (DLCP *dlconn, const char * infostr);
 extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
 extern void    dl_terminate (DLCP *dlconn);
