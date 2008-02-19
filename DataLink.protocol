@@ -31,14 +31,14 @@ c  ENDSTREAM
 
 Server replies:
 
-ERROR value size|<error message>
-OK value size|<status message>
+c ERROR value size|<error message>
+c OK value size|<status message>
 
 Returned INFO requests:
 
-INFO size|<XML info data of length size>
+c INFO size|<XML info data of length size>
 
 Returned packets:
 
-s  PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+s PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
 

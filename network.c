@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.034
+ * Version: 2008.049
  ***************************************************************************/
 
 #include <stdio.h>
@@ -279,8 +279,9 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
  * recv() 'readlen' bytes from 'dlconn->link' into a specified
  * 'buffer'.
  *
- * Return number of characters read on success, -1 on connection
- * shutdown and -2 on error.
+ * Return number of characters read on success (0 when no data
+ * available on non-blocking socket), -1 on connection shutdown and -2
+ * on error.
  ***************************************************************************/
 int
 dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
@@ -305,6 +306,10 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
 	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
 			dlconn->addr, nrecv, dlp_strerror ());
 	      return -2;
+	    }
+	  else
+	    {
+	      return 0;
 	    }
         }
       
@@ -335,7 +340,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
  * terminated string.
  *
  * Returns -1 on error or shutdown and the number of bytes in the
- * header payload on success.
+ * header payload on success or 0 when no data is available.
  ***************************************************************************/
 int
 dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
@@ -344,7 +349,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
   int headerlen;
   char *cbuffer = buffer;
   
-  if ( ! buffer )
+  if ( ! dlconn || ! buffer )
     {
       return -1;
     }
@@ -357,7 +362,8 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
   /* Receive synchronization bytes and header length */
   if ( (bytesread = dl_recvdata (buffer, buffer, 3)) != 3 )
     {
-      return -1;
+      /* Return 0 when no data is available or -1 on error */
+      return ( bytesread == 0 ) ? 0 : -1;
     }
   
   /* Test synchronization bytes */
@@ -373,12 +379,6 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
   
   /* Receive header payload */
   if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen)) != headerlen )
-    {
-      return -1;
-    }
-  
-  /* Trap door for termination */
-  if ( dlconn->terminate )
     {
       return -1;
     }
