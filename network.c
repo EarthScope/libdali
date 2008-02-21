@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.049
+ * Version: 2008.052
  ***************************************************************************/
 
 #include <stdio.h>
@@ -297,11 +297,14 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
     }
   
   /* Set socket to blocking if requested */
-  if ( dlp_sockblock (dlconn->link) )
+  if ( blockflag )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to blocking: %s\n",
-		dlconn->addr, dlp_strerror ());
-      return -2;
+      if ( dlp_sockblock (dlconn->link) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to blocking: %s\n",
+		    dlconn->addr, dlp_strerror ());
+	  return -2;
+	}
     }
   
   /* Recv until readlen bytes have been read */
@@ -340,11 +343,14 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
     }
   
   /* Set socket to non-blocking if set to blocking */
-  if ( dlp_socknoblock (dlconn->link) )
+  if ( blockflag )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to non-blocking: %s\n",
-		dlconn->addr, dlp_strerror ());
-      return -2;
+      if ( dlp_socknoblock (dlconn->link) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to non-blocking: %s\n",
+		    dlconn->addr, dlp_strerror ());
+	  return -2;
+	}
     }
   
   return nread;
