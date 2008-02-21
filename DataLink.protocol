@@ -40,5 +40,4 @@ c INFO size|<XML info data of length size>
 
 Returned packets:
 
-s PACKET <streamid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
-
+c PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>

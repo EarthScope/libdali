@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.049
+ * modified: 2008.051
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -31,7 +31,7 @@ extern "C" {
 #include "portable.h"
 
 #define LIBDALI_VERSION "1.0"
-#define LIBDALI_RELEASE "2008.049"
+#define LIBDALI_RELEASE "2008.051"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -95,6 +95,7 @@ typedef struct DLCP_s
 typedef struct DLPacket_s
 {
   char        streamid[MAXSTREAMID]; /* Stream ID */
+  int64_t     pktid;            /* Packet ID */
   dltime_t    pkttime;          /* Packet time */
   dltime_t    datatime;         /* Data time */
   int32_t     datasize;         /* Data size in bytes */
@@ -133,8 +134,8 @@ extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
 extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
 			      void *packetbuf, size_t packetlen,
 			      void *resp, int resplen);
-extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen);
-extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen);
+extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
+extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
 
 /* timeutils.c */
 extern int     dl_doy2md (int year, int jday, int *month, int *mday);

@@ -208,7 +208,7 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
  * If 'resp' is not NULL then read up to 'resplen' bytes into 'resp'
  * after sending 'buffer' using dl_recvheader().  This is only
  * designed for small pieces of data, specifically the server
- * acknowledgement to a command which are a packet header only.
+ * acknowledgement to a command, which are a packet header only.
  *
  * Returns -1 on error, and size (in bytes) of the response
  * received (0 if 'resp' == NULL).
@@ -262,7 +262,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   /* If requested collect the response (packet header only) */
   if ( resp != NULL )
     {
-      if ( (bytesread = dl_recvheader (dlconn, resp, resplen)) < 0 )
+      if ( (bytesread = dl_recvheader (dlconn, resp, resplen, 1)) < 0 )
 	{
 	  dl_log_r (dlconn, 2, 0, "[%s] error receving data\n", dlconn->addr);
 	  return -1;
@@ -277,14 +277,15 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
  * dl_recvdata:
  *
  * recv() 'readlen' bytes from 'dlconn->link' into a specified
- * 'buffer'.
+ * 'buffer'.  If the 'blockflag' is true the socket is set to blocking
+ * while receiving and set back to non-blocking after done receiving.
  *
  * Return number of characters read on success (0 when no data
  * available on non-blocking socket), -1 on connection shutdown and -2
  * on error.
  ***************************************************************************/
 int
-dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
+dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
 {
   int nrecv;
   int nread = 0;
@@ -295,27 +296,40 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
       return -2;
     }
   
+  /* Set socket to blocking if requested */
+  if ( dlp_sockblock (dlconn->link) )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to blocking: %s\n",
+		dlconn->addr, dlp_strerror ());
+      return -2;
+    }
+  
   /* Recv until readlen bytes have been read */
   while ( nread < readlen )
     {
       if ( (nrecv = recv(dlconn->link, bptr, readlen-nread, 0)) < 0 )
         {
           /* The only acceptable error is no data on non-blocking */
-	  if ( dlp_noblockcheck() )
+	  if ( ! blockflag && ! dlp_noblockcheck() )
 	    {
-	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
-			dlconn->addr, nrecv, dlp_strerror ());
-	      return -2;
+	      nread = 0;
 	    }
 	  else
 	    {
-	      return 0;
+	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
+			dlconn->addr, nrecv, dlp_strerror ());
+	      nread = -2;
 	    }
+	  
+	  break;
         }
       
       /* Peer completed an orderly shutdown */
       if ( nrecv == 0 )
-        return -1;
+	{
+	  nread = -1;
+	  break;
+	}
       
       /* Update recv pointer and byte count */
       if ( nrecv > 0 )
@@ -323,6 +337,14 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
           bptr += nrecv;
           nread += nrecv;
         }
+    }
+  
+  /* Set socket to non-blocking if set to blocking */
+  if ( dlp_socknoblock (dlconn->link) )
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] Error setting socket to non-blocking: %s\n",
+		dlconn->addr, dlp_strerror ());
+      return -2;
     }
   
   return nread;
@@ -343,7 +365,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen)
  * header payload on success or 0 when no data is available.
  ***************************************************************************/
 int
-dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
+dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
 {
   int bytesread = 0;
   int headerlen;
@@ -360,7 +382,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
     }
   
   /* Receive synchronization bytes and header length */
-  if ( (bytesread = dl_recvdata (buffer, buffer, 3)) != 3 )
+  if ( (bytesread = dl_recvdata (buffer, buffer, 3, blockflag)) != 3 )
     {
       /* Return 0 when no data is available or -1 on error */
       return ( bytesread == 0 ) ? 0 : -1;
@@ -377,8 +399,8 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen)
   /* 3rd byte is the header length */
   headerlen = (uint8_t) cbuffer[2];
   
-  /* Receive header payload */
-  if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen)) != headerlen )
+  /* Receive header payload blocking until completely received */
+  if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen, 1)) != headerlen )
     {
       return -1;
     }
