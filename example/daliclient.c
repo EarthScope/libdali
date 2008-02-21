@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.012
+ * modified 2008.051
  ***************************************************************************/
 
 #include <stdio.h>
@@ -29,11 +29,13 @@
 #define PACKAGE "daliclient"
 #define VERSION LIBDALI_VERSION
 
-static short int verbose  = 0;
-static short int ppackets = 0;
-static char * statefile   = 0;	    /* state file for saving/restoring state */
+static short int verbose   = 0;
+static short int ppackets  = 0;
+static char *statefile     = 0;	    /* State file for saving/restoring state */
+static char *matchpattern  = 0;	    /* Source ID matching expression */
+static char *rejectpattern = 0;	    /* Source ID rejecting expression */
 
-static DLCP * dlconn;	            /* connection parameters */
+static DLCP *dlconn;	            /* Connection parameters */
 
 static void packet_handler (char *msrecord, int packet_type,
 			    int seqnum, int packet_size);
@@ -44,22 +46,21 @@ static void usage (void);
 int
 main (int argc, char **argv)
 {
-  SLpacket * slpack;
-  int seqnum;
-  int ptype;
-
+  DLPacket *dlpack;
+  int64_t value;
+  
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
   struct sigaction sa;
 
   sigemptyset (&sa.sa_mask);
   sa.sa_flags   = SA_RESTART;
-
+  
   sa.sa_handler = term_handler;
   sigaction (SIGINT, &sa, NULL);
   sigaction (SIGQUIT, &sa, NULL);
   sigaction (SIGTERM, &sa, NULL);
-
+  
   sa.sa_handler = SIG_IGN;
   sigaction (SIGHUP, &sa, NULL);
   sigaction (SIGPIPE, &sa, NULL);
@@ -69,35 +70,72 @@ main (int argc, char **argv)
   dlconn = dl_newdlcp();
   
   /* Process given parameters (command line and parameter file) */
-  if (parameter_proc (argc, argv) < 0)
+  if ( parameter_proc (argc, argv) < 0 )
     {
-      fprintf(stderr, "Parameter processing failed\n\n");
-      fprintf(stderr, "Try '-h' for detailed help\n");
+      fprintf (stderr, "Parameter processing failed\n\n");
+      fprintf (stderr, "Try '-h' for detailed help\n");
       return -1;
     }
+  
+  /* Connect to server */
+  if ( dl_connect (dlcp) < 0 )
+    {
+      fprintf (stderr, "Error connecting to server\n");
+      return -1;
+    }
+  
+  /* Reposition connection */
+  if ( dlconn->pktid > 0 )
+    {
+      if ( (rv = dl_position (dlconn, dlconn->pktid, dlconn->pkttime)) < 0 )
+	return -1;
+      else
+	dl_log (1, 1, "Reposition connection to packet ID %lld\n", rv);
+    }
+  
+  /* Send match pattern if supplied */
+  if ( matchpattern )
+    {
+      rv = dl_match (dlcp, matchpattern);
+      
+      if ( rv < 0 )
+	return -1;
+      else
+	dl_log (1, 1, "Matching %d current streams\n", rv);
+    }
+  
+  /* Send reject pattern if supplied */
+  if ( rejectpattern )
+    {
+      rv = dl_match (dlcp, rejectpattern);
+      
+      if ( rv < 0 )
+	return -1;
+      else
+	dl_log (1, 1, "Rejecting %d current streams\n", rv);
+    }
+  
+  // CHAD, need to rework this main collect loop and the packet_handler()
   
   /* Loop with the connection manager */
   while ( dl_collect (dlconn, &slpack) )
     {
       ptype  = dl_packettype (slpack);
       seqnum = dl_sequence (slpack);
-
+      
       packet_handler ((char *) &slpack->msrecord, ptype, seqnum, SLRECSIZE);
-
-      /* It would be possible to send an in-line INFO request
-	 here with dl_request_info().
-      */
     }
-
+  
   /* Make sure everything is shut down and save the state file */
-  if (dlconn->link != -1)
+  if ( dlconn->link != -1 )
     dl_disconnect (dlconn);
-
-  if (statefile)
+  
+  /* Save the state file */
+  if ( statefile )
     dl_savestate (dlconn, statefile);
-
+  
   return 0;
-}				/* End of main() */
+}  /* End of main() */
 
 
 /***************************************************************************
@@ -149,7 +187,7 @@ packet_handler (char *msrecord, int packet_type, int seqnum, int packet_size)
       dl_log (0, 1, "%s, seq %d, Received %s blockette\n",
 	      timestamp, seqnum, type[packet_type]);
     }
-}				/* End of packet_handler() */
+}  /* End of packet_handler() */
 
 
 /***************************************************************************
@@ -165,13 +203,11 @@ parameter_proc (int argcount, char **argvec)
   int optind;
   int error = 0;
   
-  char *streamfile  = 0;	/* stream list file for configuring streams */
-  char *multiselect = 0;
-  char *selectors   = 0;
-
+  char *pattern = 0;
+  
   if (argcount <= 1)
     error++;
-
+  
   /* Process all command line arguments */
   for (optind = 1; optind < argcount; optind++)
     {
@@ -193,31 +229,15 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  ppackets = 1;
 	}
-      else if (strcmp (argvec[optind], "-nt") == 0)
+      else if (strcmp (argvec[optind], "-m") == 0)
 	{
-	  dlconn->netto = atoi (argvec[++optind]);
+	  matchpattern = argvec[++optind];
 	}
-      else if (strcmp (argvec[optind], "-nd") == 0)
+      else if (strcmp (argvec[optind], "-r") == 0)
 	{
-	  dlconn->netdly = atoi (argvec[++optind]);
-	}
-      else if (strcmp (argvec[optind], "-k") == 0)
-	{
-	  dlconn->keepalive = atoi (argvec[++optind]);
-	}
-      else if (strcmp (argvec[optind], "-l") == 0)
-	{
-	  streamfile = argvec[++optind];
-	}
-      else if (strcmp (argvec[optind], "-s") == 0)
-	{
-	  selectors = argvec[++optind];
+	  rejectpattern = argvec[++optind];
 	}
       else if (strcmp (argvec[optind], "-S") == 0)
-	{
-	  multiselect = argvec[++optind];
-	}
-      else if (strcmp (argvec[optind], "-x") == 0)
 	{
 	  statefile = argvec[++optind];
 	}
@@ -226,9 +246,9 @@ parameter_proc (int argcount, char **argvec)
 	  fprintf(stderr, "Unknown option: %s\n", argvec[optind]);
 	  exit (1);
 	}
-      else if (!dlconn->sladdr)
+      else if ( ! dlconn->addr )
 	{
-	  dlconn->sladdr = argvec[optind];
+	  dlconn->addr = argvec[optind];
 	}
       else
 	{
@@ -236,11 +256,11 @@ parameter_proc (int argcount, char **argvec)
 	  exit (1);
 	}
     }
-
+  
   /* Make sure a server was specified */
-  if ( ! dlconn->sladdr )
+  if ( ! dlconn->addr )
     {
-      fprintf(stderr, "No SeedLink server specified\n\n");
+      fprintf(stderr, "No DataLink server specified\n\n");
       fprintf(stderr, "Usage: %s [options] [host][:port]\n", PACKAGE);
       fprintf(stderr, "Try '-h' for detailed help\n");
       exit (1);
@@ -253,42 +273,52 @@ parameter_proc (int argcount, char **argvec)
   dl_log (0, 1, "%s version: %s\n", PACKAGE, VERSION);
   
   /* If errors then report the usage message and quit */
-  if (error)
+  if ( error )
     {
       usage ();
       exit (1);
     }
-
-  /* If verbosity is 2 or greater print detailed packet infor */
+  
+  /* If verbosity is 2 or greater print detailed packet information */
   if ( verbose >= 2 )
     ppackets = 1;
   
-  /* Load the stream list from a file if specified */
-  if ( streamfile )
-    dl_read_streamlist (dlconn, streamfile, selectors);
-  
-  /* Parse the 'multiselect' string following '-S' */
-  if ( multiselect )
+  /* Load the match stream list from a file if the argument starts with '@' */
+  if ( matchpattern && *matchpattern == '@' )
     {
-      if ( dl_parse_streamlist (dlconn, multiselect, selectors) == -1 )
-	return -1;
-    }
-  else if ( !streamfile )
-    {			 /* No 'streams' array, assuming uni-station mode */
-      dl_setuniparams (dlconn, selectors, -1, 0);
-    }
-  
-  /* Attempt to recover sequence numbers from state file */
-  if (statefile)
-    {
-      if (dl_recoverstate (dlconn, statefile) < 0)
+      char *filename = matchpattern + 1;
+      
+      if ( ! (matchpattern = dl_read_streamlist (dlconn, filename)) )
 	{
-	  dl_log (2, 0, "state recovery failed\n");
+	  dl_log (2, 0, "Cannot read matching list file: %s\n", filename);
+	  exit (1);
+	}
+    }
+
+  /* Load the reject stream list from a file if the argument starts with '@' */
+  if ( rejectpattern && *rejectpattern == '@' )
+    {
+      char *filename = rejectpattern + 1;
+      
+      if ( ! (rejectpattern = dl_read_streamlist (dlconn, filename)) )
+	{
+	  dl_log (2, 0, "Cannot read rejecting list file: %s\n", filename);
+	  exit (1);
+	}
+    }
+  
+  /* Recover from the state file and reposition */
+  if ( statefile )
+    {
+      if ( dl_recoverstate (dlconn, statefile) < 0 )
+	{
+	  fprintf (stderr, "Error reading state file\n");
+	  exit (1);
 	}
     }
   
   return 0;
-}				/* End of parameter_proc() */
+}  /* End of parameter_proc() */
 
 
 /***************************************************************************
@@ -305,25 +335,15 @@ usage (void)
 	   " -h             show this usage message\n"
 	   " -v             be more verbose, multiple flags can be used\n"
 	   " -p             print details of data packets\n\n"
-	   " -nd delay      network re-connect delay (seconds), default 30\n"
-	   " -nt timeout    network timeout (seconds), re-establish connection if no\n"
-	   "                  data/keepalives are received in this time, default 600\n"
-	   " -k interval    send keepalive (heartbeat) packets this often (seconds)\n"
-	   " -x statefile   save/restore stream state information to this file\n"
-	   "\n"
-	   " ## Data stream selection ##\n"
-	   " -l listfile    read a stream list from this file for multi-station mode\n"
-	   " -s selectors   selectors for uni-station or default for multi-station\n"
-           " -S streams     select streams for multi-station (requires SeedLink >= 2.5)\n"
-	   "   'streams' = 'stream1[:selectors1],stream2[:selectors2],...'\n"
-	   "        'stream' is in NET_STA format, for example:\n"
-	   "        -S \"IU_KONO:BHE BHN,GE_WLF,MN_AQU:HH?.D\"\n\n"
+	   " -m match       specify stream ID matching pattern\n"
+	   " -r reject      specify stream ID rejecting pattern\n"
+	   " -S statefile   save/restore stream state information to this file\n"
 	   "\n"
 	   " [host][:port]  Address of the SeedLink server in host:port format\n"
-	   "                  if host is omitted (i.e. ':18000'), localhost is assumed\n"
-	   "                  if :port is omitted (i.e. 'localhost'), 18000 is assumed\n\n");
+	   "                  if host is omitted (i.e. ':16000'), localhost is assumed\n"
+	   "                  if :port is omitted (i.e. 'localhost'), 16000 is assumed\n\n");
   
-}				/* End of usage() */
+}  /* End of usage() */
 
 #ifndef WIN32
 /***************************************************************************
