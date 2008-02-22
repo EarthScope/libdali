@@ -27,12 +27,14 @@ cs  WRITE streamid hpdatatime flags size|<packet data of length size>
 cs  READ pktid
   - Reply with either PACKET or ERROR
 
-c  STREAM
+cs  STREAM
   - Must handle in-line IDs
 
-c  ENDSTREAM
+cs  ENDSTREAM
+  - Server returns ENDSTREAM
 
-  INFO type
+c  INFO type
+  - Server returns INFO ...
 
 Server replies:
 
@@ -45,4 +47,4 @@ c INFO type size|<XML info data of length size>
 
 Returned packets:
 
-c PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+cs PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
