@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.051
+ * modified 2008.053
  ***************************************************************************/
 
 #include <stdio.h>
@@ -37,22 +37,23 @@ static char *rejectpattern = 0;	    /* Source ID rejecting expression */
 
 static DLCP *dlconn;	            /* Connection parameters */
 
-static void packet_handler (char *msrecord, int packet_type,
-			    int seqnum, int packet_size);
 static int parameter_proc (int argcount, char **argvec);
 static void usage (void);
-
 
 int
 main (int argc, char **argv)
 {
-  DLPacket *dlpack;
-  int64_t value;
+  DLPacket dlpack;
+  char packetdata[MAXPACKETSIZE];
+  int64_t rv;
+  
+  char ptime[50];
+  char dtime[50];
   
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
   struct sigaction sa;
-
+  
   sigemptyset (&sa.sa_mask);
   sa.sa_flags   = SA_RESTART;
   
@@ -65,7 +66,7 @@ main (int argc, char **argv)
   sigaction (SIGHUP, &sa, NULL);
   sigaction (SIGPIPE, &sa, NULL);
 #endif
-
+  
   /* Allocate and initialize a new connection description */
   dlconn = dl_newdlcp();
   
@@ -78,7 +79,7 @@ main (int argc, char **argv)
     }
   
   /* Connect to server */
-  if ( dl_connect (dlcp) < 0 )
+  if ( dl_connect (dlconn) < 0 )
     {
       fprintf (stderr, "Error connecting to server\n");
       return -1;
@@ -96,7 +97,7 @@ main (int argc, char **argv)
   /* Send match pattern if supplied */
   if ( matchpattern )
     {
-      rv = dl_match (dlcp, matchpattern);
+      rv = dl_match (dlconn, matchpattern);
       
       if ( rv < 0 )
 	return -1;
@@ -107,7 +108,7 @@ main (int argc, char **argv)
   /* Send reject pattern if supplied */
   if ( rejectpattern )
     {
-      rv = dl_match (dlcp, rejectpattern);
+      rv = dl_match (dlconn, rejectpattern);
       
       if ( rv < 0 )
 	return -1;
@@ -115,15 +116,14 @@ main (int argc, char **argv)
 	dl_log (1, 1, "Rejecting %d current streams\n", rv);
     }
   
-  // CHAD, need to rework this main collect loop and the packet_handler()
-  
   /* Loop with the connection manager */
-  while ( dl_collect (dlconn, &slpack) )
+  while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), 0) == DLPACKET )
     {
-      ptype  = dl_packettype (slpack);
-      seqnum = dl_sequence (slpack);
+      dl_dltime2seedtimestr (dlpack.pkttime, ptime, 1);
+      dl_dltime2seedtimestr (dlpack.datatime, dtime, 1);
       
-      packet_handler ((char *) &slpack->msrecord, ptype, seqnum, SLRECSIZE);
+      dl_log (0, 0, "Received %s (ID:%lld %s), %s, %d\n",
+	      dlpack.streamid, dlpack.pktid, ptime, dtime, dlpack.datasize);
     }
   
   /* Make sure everything is shut down and save the state file */
@@ -139,58 +139,6 @@ main (int argc, char **argv)
 
 
 /***************************************************************************
- * packet_handler():
- * Process a received packet based on packet type.
- ***************************************************************************/
-static void
-packet_handler (char *msrecord, int packet_type, int seqnum, int packet_size)
-{
-  static SLMSrecord * msr = NULL;
-
-  double dtime;			/* Epoch time */
-  double secfrac;		/* Fractional part of epoch time */
-  time_t itime;			/* Integer part of epoch time */
-  char timestamp[20];
-  struct tm *timep;
-
-  /* The following is dependent on the packet type values in libslink.h */
-  char *type[]  = { "Data", "Detection", "Calibration", "Timing",
-		    "Message", "General", "Request", "Info",
-                    "Info (terminated)", "KeepAlive" };
-
-  /* Build a current local time string */
-  dtime   = dl_dtime ();
-  secfrac = (double) ((double)dtime - (int)dtime);
-  itime   = (time_t) dtime;
-  timep   = localtime (&itime);
-  snprintf (timestamp, 20, "%04d.%03d.%02d:%02d:%02d.%01.0f",
-	    timep->tm_year + 1900, timep->tm_yday + 1, timep->tm_hour,
-	    timep->tm_min, timep->tm_sec, secfrac);
-
-  /* Process waveform data */
-  if ( packet_type == SLDATA )
-    {
-      dl_log (0, 1, "%s, seq %d, Received %s blockette:\n",
-	      timestamp, seqnum, type[packet_type]);
-
-      dl_msr_parse (dlconn->log, msrecord, &msr, 1, 0);
-
-      if ( verbose || ppackets )
-	dl_msr_print (dlconn->log, msr, ppackets);
-    }
-  else if ( packet_type == SLKEEP )
-    {
-      dl_log (0, 2, "Keep alive packet received\n");
-    }
-  else
-    {
-      dl_log (0, 1, "%s, seq %d, Received %s blockette\n",
-	      timestamp, seqnum, type[packet_type]);
-    }
-}  /* End of packet_handler() */
-
-
-/***************************************************************************
  * parameter_proc:
  *
  * Process the command line parameters.
@@ -203,9 +151,7 @@ parameter_proc (int argcount, char **argvec)
   int optind;
   int error = 0;
   
-  char *pattern = 0;
-  
-  if (argcount <= 1)
+  if ( argcount <= 1 )
     error++;
   
   /* Process all command line arguments */

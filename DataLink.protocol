@@ -7,7 +7,7 @@ High-precision times are epochs times in microseconds
 Client commands:
 
 cs  ID clientID
-  - Reply is header-only formulated as: "DataLink (vYYYY.DDD) :: DLPROTO:#.#"
+  - Reply is header-only formulated as: "ID DataLink (vYYYY.DDD) :: DLPROTO:#.#"
 
 cs  POSITION SET pktid hppkttime
   - pktid can be "EARLIEST" or "LATEST"

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.052
+ * modified: 2008.053
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -85,10 +85,11 @@ dl_freedlcp (DLCP *dlconn)
 int
 dl_getid (DLCP *dlconn, int parseresp)
 {
-  int ret = 0;
   char sendstr[255];		/* Buffer for command strings */
-  char recvstr[255];		/* Buffer for server response */
+  char respstr[255];		/* Buffer for server response */  
   char *capptr;                 /* Pointer to capabilities flags */  
+  int respsize;
+  int ret = 0;
 
   if ( ! dlconn )
     return -1;
@@ -106,18 +107,32 @@ dl_getid (DLCP *dlconn, int parseresp)
 	    (dlconn->clientid) ? dlconn->clientid : "");
   dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
   
-  if ( dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
-		      recvstr, sizeof(recvstr)) < 0 )
+  respsize = dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
+			    respstr, sizeof(respstr));
+  
+  /* Check for errors */
+  if ( respsize < 0 )
     {
       return -1;
     }
   
+  /* Check minimum server ID response size */
+  if ( respsize < 11 )
+    {
+      dl_log_r (dlconn, 1, 2, "[%s] Server ID response too short: %d\n",
+		dlconn->addr, respstr);
+      return -1;
+    }
+  
+  /* Make sure the response string is terminated */
+  respstr[respsize] = '\0';
+  
   /* Verify DataLink signature in server response */
-  if ( strncasecmp (recvstr, "DATALINK", 8) )
+  if ( strncasecmp (respstr, "ID DATALINK", 11) )
     {
       dl_log_r (dlconn, 1, 1,
-                "[%s] dl_getid(): Unrecognized server ID: %8.8s\n",
-                dlconn->addr, recvstr);
+                "[%s] dl_getid(): Unrecognized server ID: %11.11s\n",
+                dlconn->addr, respstr);
       return -1;
     }
   
@@ -126,9 +141,9 @@ dl_getid (DLCP *dlconn, int parseresp)
     {
       /* Search for capabilities flags in server ID by looking for "::"
        * The expected format of the complete server ID is:
-       * "DataLink <optional text> <:: optional capability flags>"
+       * "ID DataLink <optional text> <:: optional capability flags>"
        */
-      capptr = strstr (recvstr, "::");
+      capptr = strstr (respstr, "::");
       if ( capptr )
 	{
 	  /* Truncate server ID portion of string */
@@ -142,8 +157,8 @@ dl_getid (DLCP *dlconn, int parseresp)
 	    capptr++;
 	}
       
-      /* Report received server ID */
-      dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, recvstr);
+      /* Report received server ID (without the initial "ID ") */
+      dl_log_r (dlconn, 1, 1, "[%s] connected to: %s\n", dlconn->addr, respstr+3);
       if ( capptr )
 	dl_log_r (dlconn, 1, 1, "[%s] capabilities: %s\n", dlconn->addr, capptr);
       
@@ -752,7 +767,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       
       dlconn->streaming = 1;
       dlconn->keepalive_trig = -1;
-      dl_log_r (dlconn, 1, 2, "[%s] STREAM command sent to server", dlconn->addr);
+      dl_log_r (dlconn, 1, 2, "[%s] STREAM command sent to server\n", dlconn->addr);
     }
   
   /* If streaming and end is requested send the ENDSTREAM command */
@@ -771,7 +786,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       
       dlconn->streaming = -1;
       dlconn->keepalive_trig = -1;
-      dl_log_r (dlconn, 1, 2, "[%s] ENDSTREAM command sent to server", dlconn->addr);
+      dl_log_r (dlconn, 1, 2, "[%s] ENDSTREAM command sent to server\n", dlconn->addr);
     }
   
   /* Start the primary loop */

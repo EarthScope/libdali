@@ -7,8 +7,11 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.052
+ * Version: 2008.053
  ***************************************************************************/
+
+// There is no way to distinguish between shutdown and error using dl_recvheader()
+// maybe different error codes like with dl_recvdata() ?
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -117,6 +120,7 @@ dl_connect (DLCP *dlconn)
   if ( dlp_socknoblock(sock) )
     {
       dl_log_r (dlconn, 2, 0, "Error setting socket to non-blocking\n");
+      dlp_sockclose (sock);
       return -1;
     }
   
@@ -264,7 +268,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
     {
       if ( (bytesread = dl_recvheader (dlconn, resp, resplen, 1)) < 0 )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] error receving data\n", dlconn->addr);
+	  dl_log_r (dlconn, 2, 0, "[%s] error receiving data\n", dlconn->addr);
 	  return -1;
 	}
     }
@@ -296,6 +300,8 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
       return -2;
     }
   
+  fprintf (stderr, "DB receiving data (%zu), blockflag: %u\n", readlen, blockflag);
+  
   /* Set socket to blocking if requested */
   if ( blockflag )
     {
@@ -306,21 +312,24 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
 	  return -2;
 	}
     }
-  
+
   /* Recv until readlen bytes have been read */
   while ( nread < readlen )
     {
+      fprintf (stderr, "DB receiving data (%zu), nread: %d\n", readlen, nread);
+
       if ( (nrecv = recv(dlconn->link, bptr, readlen-nread, 0)) < 0 )
         {
           /* The only acceptable error is no data on non-blocking */
 	  if ( ! blockflag && ! dlp_noblockcheck() )
 	    {
+	      fprintf (stderr, "DB No data for non-blocking socket\n");
 	      nread = 0;
 	    }
 	  else
-	    {
-	      dl_log_r (dlconn, 2, 0, "[%s] recv():%d %s\n",
-			dlconn->addr, nrecv, dlp_strerror ());
+	    {	      
+	      dl_log_r (dlconn, 2, 0, "[%s] recv(%d): %d %s\n",
+			dlconn->addr, dlconn->link, nrecv, dlp_strerror ());
 	      nread = -2;
 	    }
 	  
@@ -386,13 +395,17 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
     {
       return -1;
     }
-  
+
+  fprintf (stderr, "DB receiving header\n");
+
   /* Receive synchronization bytes and header length */
-  if ( (bytesread = dl_recvdata (buffer, buffer, 3, blockflag)) != 3 )
+  if ( (bytesread = dl_recvdata (dlconn, buffer, 3, blockflag)) != 3 )
     {
       /* Return 0 when no data is available or -1 on error */
       return ( bytesread == 0 ) ? 0 : -1;
     }
+
+  fprintf (stderr, "DB received pre-header\n");
   
   /* Test synchronization bytes */
   if ( cbuffer[0] != 'D' || cbuffer[1] != 'L' )

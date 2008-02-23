@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.012
+ * modified: 2008.053
  ***************************************************************************/
 
 #include <stdio.h>
@@ -15,11 +15,11 @@
 
 #include "libdali.h"
 
-void dl_loginit_main (DLLog * logp, int verbosity,
-		      void (*log_print)(const char*), const char * logprefix,
-		      void (*diag_print)(const char*), const char * errprefix);
+void dl_loginit_main (DLLog *logp, int verbosity,
+		      void (*log_print)(const char*), const char *logprefix,
+		      void (*diag_print)(const char*), const char *errprefix);
 
-int dl_log_main (DLLog * logp, int level, int verb, va_list * varlist);
+int dl_log_main (DLLog *logp, int level, int verb, va_list *varlist);
 
 /* Initialize the global logging parameters */
 DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
@@ -34,10 +34,10 @@ DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
  ***************************************************************************/
 void
 dl_loginit (int verbosity,
-	    void (*log_print)(const char*), const char * logprefix,
-	    void (*diag_print)(const char*), const char * errprefix)
+	    void (*log_print)(const char*), const char *logprefix,
+	    void (*diag_print)(const char*), const char *errprefix)
 {
-  dl_loginit_main(&gDLLog, verbosity, log_print, logprefix, diag_print, errprefix);
+  dl_loginit_main (&gDLLog, verbosity, log_print, logprefix, diag_print, errprefix);
 }  /* End of dl_loginit() */
 
 
@@ -51,9 +51,9 @@ dl_loginit (int verbosity,
  * See dl_loginit_main() description for usage.
  ***************************************************************************/
 void
-dl_loginit_r (DLCP * dlconn, int verbosity,
-	      void (*log_print)(const char*), const char * logprefix,
-	      void (*diag_print)(const char*), const char * errprefix)
+dl_loginit_r (DLCP *dlconn, int verbosity,
+	      void (*log_print)(const char*), const char *logprefix,
+	      void (*diag_print)(const char*), const char *errprefix)
 {
   if ( ! dlconn )
     return;
@@ -85,9 +85,9 @@ dl_loginit_r (DLCP * dlconn, int verbosity,
  * Returns a pointer to the created/re-initialized DLLog struct.
  ***************************************************************************/
 DLLog *
-dl_loginit_rl (DLLog * log, int verbosity,
-	       void (*log_print)(const char*), const char * logprefix,
-	       void (*diag_print)(const char*), const char * errprefix)
+dl_loginit_rl (DLLog *log, int verbosity,
+	       void (*log_print)(const char*), const char *logprefix,
+	       void (*diag_print)(const char*), const char *errprefix)
 {
   DLLog *logp;
 
@@ -135,9 +135,9 @@ dl_loginit_rl (DLLog * log, int verbosity,
  * Example: dl_loginit_main (0, (void*)&printf, NULL, (void*)&printf, "error: ");
  ***************************************************************************/
 void
-dl_loginit_main (DLLog * logp, int verbosity,
-		 void (*log_print)(const char*), const char * logprefix,
-		 void (*diag_print)(const char*), const char * errprefix)
+dl_loginit_main (DLLog *logp, int verbosity,
+		 void (*log_print)(const char*), const char *logprefix,
+		 void (*diag_print)(const char*), const char *errprefix)
 {
   if ( ! logp )
     return;
@@ -211,7 +211,7 @@ dl_log (int level, int verb, ...)
  * See dl_log_main() description for return values.
  ***************************************************************************/
 int
-dl_log_r (const DLCP * dlconn, int level, int verb, ...)
+dl_log_r (const DLCP *dlconn, int level, int verb, ...)
 {
   int retval;
   va_list varlist;
@@ -244,7 +244,7 @@ dl_log_r (const DLCP * dlconn, int level, int verb, ...)
  * See dl_log_main() description for return values.
  ***************************************************************************/
 int
-dl_log_rl (DLLog * log, int level, int verb, ...)
+dl_log_rl (DLLog *log, int level, int verb, ...)
 {
   int retval;
   va_list varlist;
@@ -303,13 +303,13 @@ dl_log_rl (DLLog * log, int level, int verb, ...)
  * a negative value on error.
  ***************************************************************************/
 int
-dl_log_main (DLLog * logp, int level, int verb, va_list * varlist)
+dl_log_main (DLLog *logp, int level, int verb, va_list *varlist)
 {
   static char message[MAX_LOG_MSG_LENGTH];
   int retvalue = 0;
   
   message[0] = '\0';
-
+  
   if (verb <= logp->verbosity)
     {
       int presize;
