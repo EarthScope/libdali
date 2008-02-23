@@ -46,7 +46,6 @@ main (int argc, char **argv)
   DLPacket dlpack;
   char packetdata[MAXPACKETSIZE];
   char timestr[50];
-  int64_t rv;
     
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
@@ -89,32 +88,22 @@ main (int argc, char **argv)
   /* Reposition connection */
   if ( dlconn->pktid > 0 )
     {
-      if ( (rv = dl_position (dlconn, dlconn->pktid, dlconn->pkttime)) < 0 )
+      if ( dl_position (dlconn, dlconn->pktid, dlconn->pkttime) < 0 )
 	return -1;
-      else
-	dl_log (1, 1, "Reposition connection to packet ID %lld\n", rv);
     }
   
   /* Send match pattern if supplied */
   if ( matchpattern )
     {
-      rv = dl_match (dlconn, matchpattern);
-      
-      if ( rv < 0 )
+      if ( dl_match (dlconn, matchpattern) < 0 )
 	return -1;
-      else
-	dl_log (1, 1, "Matching %lld current streams\n", rv);
     }
   
   /* Send reject pattern if supplied */
   if ( rejectpattern )
     {
-      rv = dl_match (dlconn, rejectpattern);
-      
-      if ( rv < 0 )
+      if ( dl_reject (dlconn, rejectpattern) < 0 )
 	return -1;
-      else
-	dl_log (1, 1, "Rejecting %lld current streams\n", rv);
     }
   
   /* Collect packets in streaming mode */

@@ -239,7 +239,7 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
   
   /* Log server reply message */
   if ( rv >= 0 )
-    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
   
   return ( rv < 0 ) ? -1 : replyvalue;
 }  /* End of dl_position() */
@@ -296,7 +296,7 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
   
   /* Log server reply message */
   if ( rv >= 0 )
-    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
   
   return ( rv < 0 ) ? -1 : replyvalue;
 }  /* End of dl_position_after() */
@@ -360,7 +360,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
  
   /* Log server reply message */
   if ( rv >= 0 )
-    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
   
   return ( rv < 0 ) ? -1 : replyvalue;
 }  /* End of dl_match() */
@@ -424,7 +424,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   
   /* Log server reply message */
   if ( rv >= 0 )
-    dl_log_r (dlconn, 1, 1, "%s\n", reply);
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
   
   return ( rv < 0 ) ? -1 : replyvalue;
 }  /* End of dl_reject() */
@@ -489,7 +489,7 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
       
       /* Log server reply message */
       if ( rv >= 0 )
-	dl_log_r (dlconn, 1, 3, "%s\n", reply);
+	dl_log_r (dlconn, 1, 3, "[%s] %s\n", dlconn->addr, reply);
       else
 	replyvalue = -1;
     }
@@ -596,7 +596,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
       
       /* Log server reply message */
       if ( rv >= 0 )
-	dl_log_r (dlconn, 2, 0, "%s\n", header);
+	dl_log_r (dlconn, 2, 0, "[%s] %s\n", dlconn->addr, header);
       
       return -1;
     }
@@ -707,7 +707,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
       
       /* Log server reply message */
       if ( rv >= 0 )
-	dl_log_r (dlconn, 2, 0, "%s\n", header);
+	dl_log_r (dlconn, 2, 0, "[%s] %s\n", dlconn->addr, header);
       
       return -1;
     }
