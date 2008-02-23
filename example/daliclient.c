@@ -45,11 +45,9 @@ main (int argc, char **argv)
 {
   DLPacket dlpack;
   char packetdata[MAXPACKETSIZE];
+  char timestr[50];
   int64_t rv;
-  
-  char ptime[50];
-  char dtime[50];
-  
+    
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
   struct sigaction sa;
@@ -78,6 +76,9 @@ main (int argc, char **argv)
       return -1;
     }
   
+  /* Set the client ID */
+  dlconn->clientid = "daliclient";
+  
   /* Connect to server */
   if ( dl_connect (dlconn) < 0 )
     {
@@ -102,7 +103,7 @@ main (int argc, char **argv)
       if ( rv < 0 )
 	return -1;
       else
-	dl_log (1, 1, "Matching %d current streams\n", rv);
+	dl_log (1, 1, "Matching %lld current streams\n", rv);
     }
   
   /* Send reject pattern if supplied */
@@ -113,17 +114,16 @@ main (int argc, char **argv)
       if ( rv < 0 )
 	return -1;
       else
-	dl_log (1, 1, "Rejecting %d current streams\n", rv);
+	dl_log (1, 1, "Rejecting %lld current streams\n", rv);
     }
   
-  /* Loop with the connection manager */
+  /* Collect packets in streaming mode */
   while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), 0) == DLPACKET )
     {
-      dl_dltime2seedtimestr (dlpack.pkttime, ptime, 1);
-      dl_dltime2seedtimestr (dlpack.datatime, dtime, 1);
+      dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
       
-      dl_log (0, 0, "Received %s (ID:%lld %s), %s, %d\n",
-	      dlpack.streamid, dlpack.pktid, ptime, dtime, dlpack.datasize);
+      dl_log (0, 0, "Received %s (%lld), %s, %d\n",
+	      dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
     }
   
   /* Make sure everything is shut down and save the state file */
@@ -174,6 +174,10 @@ parameter_proc (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-p") == 0)
 	{
 	  ppackets = 1;
+	}
+      else if (strcmp (argvec[optind], "-k") == 0)
+	{
+	  dlconn->keepalive = strtoul (argvec[++optind], NULL, 10);
 	}
       else if (strcmp (argvec[optind], "-m") == 0)
 	{
@@ -281,6 +285,7 @@ usage (void)
 	   " -h             show this usage message\n"
 	   " -v             be more verbose, multiple flags can be used\n"
 	   " -p             print details of data packets\n\n"
+	   " -k secs        specify keepalive interval in seconds\n"
 	   " -m match       specify stream ID matching pattern\n"
 	   " -r reject      specify stream ID rejecting pattern\n"
 	   " -S statefile   save/restore stream state information to this file\n"

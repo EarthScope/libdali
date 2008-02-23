@@ -357,7 +357,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
   
   /* Reply message, if sent, will be placed into the reply buffer */
   rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
-  
+ 
   /* Log server reply message */
   if ( rv >= 0 )
     dl_log_r (dlconn, 1, 1, "%s\n", reply);
@@ -546,8 +546,10 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   /* Receive packet header, blocking until received */
   if ( (rv = dl_recvheader (dlconn, header, sizeof(header), 1)) < 0 )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] dl_read(): problem receving packet header\n",
-		dlconn->addr);
+      /* Only log an error if the connection was not shut down */
+      if ( rv < -1 )
+	dl_log_r (dlconn, 2, 0, "[%s] dl_read(): problem receving packet header\n",
+		  dlconn->addr);
       return -1;
     }
   
@@ -574,10 +576,12 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 	}
       
       /* Receive packet data, blocking until complete */
-      if ( dl_recvdata (dlconn, packetdata, packet->datasize, 1) != packet->datasize )
+      if ( (rv = dl_recvdata (dlconn, packetdata, packet->datasize, 1)) != packet->datasize )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] dl_read(): problem receiving packet data\n",
-		    dlconn->addr);
+	  /* Only log an error if the connection was not shut down */
+	  if ( rv < -1 )
+	    dl_log_r (dlconn, 2, 0, "[%s] dl_read(): problem receiving packet data\n",
+		      dlconn->addr);
 	  return -1;
 	}
       
@@ -653,8 +657,10 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
   /* Receive packet header, blocking until complete: INFO <size> */
   if ( (rv = dl_recvheader (dlconn, header, sizeof(header), 1)) < 0 )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): problem receving packet header\n",
-		dlconn->addr);
+      /* Only log an error if the connection was not shut down */
+      if ( rv < -1 )
+	dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): problem receving packet header\n",
+		  dlconn->addr);
       return -1;
     }
   
@@ -685,10 +691,12 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
 	}
       
       /* Receive INFO data, blocking until complete */
-      if ( dl_recvdata (dlconn, infodata, infosize, 1) != infosize )
+      if ( (rv = dl_recvdata (dlconn, infodata, infosize, 1)) != infosize )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): problem receiving INFO data\n",
-		    dlconn->addr);
+	  /* Only log an error if the connection was not shut down */
+	  if ( rv < -1 )
+	    dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): problem receiving INFO data\n",
+		      dlconn->addr);
 	  return -1;
 	}
     }
@@ -728,8 +736,8 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
  * packet body will be copied into packet buffer.
  *
  * Returns DLPACKET when a packet is received.  Returns DLENDED when
- * the stream ending sequence was completed or the terminate flag was
- * set.  Returns DLERROR when an error occurred.
+ * the stream ending sequence was completed or the connection was
+ * shut down.  Returns DLERROR when an error occurred.
  ***************************************************************************/
 int
 dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
@@ -801,8 +809,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	  headerlen = snprintf (header, sizeof(header), "ID %s",
 				(dlconn->clientid) ? dlconn->clientid : "");
 	  
-	  if ( dl_sendpacket (dlconn, header, headerlen,
-			      NULL, 0, NULL, 0) < 0 )
+	  if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
 	    {
 	      dl_log_r (dlconn, 2, 0, "[%s] dl_collect(): problem sending keepalive packet\n",
 			dlconn->addr);
@@ -835,10 +842,16 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	      /* Receive packet header, blocking until complete */
 	      if ( (rv = dl_recvheader (dlconn, header, sizeof(header), 1)) < 0 )
 		{
+		  if ( rv == -1 )
+		    return DLENDED;
+		  
 		  dl_log_r (dlconn, 2, 0, "[%s] dl_collect(): problem receving packet header\n",
 			    dlconn->addr);
 		  return DLERROR;
 		}
+	      
+	      /* Reset keepalive trigger */
+	      dlconn->keepalive_trig = -1;
 	      
 	      if ( ! strncmp (header, "PACKET", 6) )
 		{
@@ -863,8 +876,11 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 		    }
 		  
 		  /* Receive packet data, blocking until complete */
-		  if ( dl_recvdata (dlconn, packetdata, packet->datasize, 1) != packet->datasize )
+		  if ( (rv = dl_recvdata (dlconn, packetdata, packet->datasize, 1)) != packet->datasize )
 		    {
+		      if ( rv == -1 )
+			return DLENDED;
+		      
 		      dl_log_r (dlconn, 2, 0, "[%s] dl_collect(): problem receiving packet data\n",
 				dlconn->addr);
 		      return DLERROR;
@@ -894,8 +910,6 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 			    dlconn->addr, header);
 		  return DLERROR;
 		}
-	      
-	      dlconn->keepalive_trig = -1;
 	    }
 	}
       else if ( select_ret < 0 && ! dlconn->terminate )
@@ -916,7 +930,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	      dlconn->keepalive_trig = 0;
 	    }
 	  else if (dlconn->keepalive_trig == 0 &&
-		   (now - dlconn->keepalive_time) > dlconn->keepalive)
+		   (now - dlconn->keepalive_time) > (dlconn->keepalive * DLTMODULUS))
 	    {
 	      dlconn->keepalive_trig = 1;
 	    }
@@ -942,7 +956,8 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
  *
  * Returns DLPACKET when a packet is received and DLNOPACKET when no
  * packet is received.  Returns DLENDED when the stream ending
- * sequence was completed.  Returns DLERROR when an error occurred.
+ * sequence was completed or the connection was shut down.  Returns
+ * DLERROR when an error occurred.
  ***************************************************************************/
 int
 dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
@@ -1023,6 +1038,9 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
   /* Receive packet header if it's available */
   if ( (rv = dl_recvheader (dlconn, header, sizeof(header), 0)) < 0 )
     {
+      if ( rv == -1 )
+	return DLENDED;
+      
       dl_log_r (dlconn, 2, 0, "[%s] dl_collect_nb(): problem receving packet header\n",
 		dlconn->addr);
       return DLERROR;
@@ -1054,8 +1072,11 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	    }
 	  
 	  /* Receive packet data, blocking until complete */
-	  if ( dl_recvdata (dlconn, packetdata, packet->datasize, 1) != packet->datasize )
+	  if ( (rv = dl_recvdata (dlconn, packetdata, packet->datasize, 1)) != packet->datasize )
 	    {
+	      if ( rv == -1 )
+		return DLENDED;
+	      
 	      dl_log_r (dlconn, 2, 0, "[%s] dl_collect_nb(): problem receiving packet data\n",
 			dlconn->addr);
 	      return DLERROR;
@@ -1112,7 +1133,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 /***************************************************************************
  * dl_handlereply:
  *
- * Handle a servers reply to a command.  Server replies are of the form:
+ * Handle a server reply to a command.  Server replies are of the form:
  *
  * "OK|ERROR value size"
  *
@@ -1165,10 +1186,12 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   if ( size > 0 )
     {
       /* Receive reply message, blocking until complete */
-      if ( dl_recvdata (dlconn, buffer, size, 1) != size )
+      if ( (rv = dl_recvdata (dlconn, buffer, size, 1)) != size )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Problem receiving reply message\n",
-		    dlconn->addr);
+	  /* Only log an error if the connection was not shut down */
+	  if ( rv < -1 )
+	    dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Problem receiving reply message\n",
+		      dlconn->addr);
 	  return -1;
 	}
       

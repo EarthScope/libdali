@@ -10,9 +10,6 @@
  * Version: 2008.053
  ***************************************************************************/
 
-// There is no way to distinguish between shutdown and error using dl_recvheader()
-// maybe different error codes like with dl_recvdata() ?
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -268,7 +265,9 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
     {
       if ( (bytesread = dl_recvheader (dlconn, resp, resplen, 1)) < 0 )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] error receiving data\n", dlconn->addr);
+	  if ( bytesread < -1 )
+	    dl_log_r (dlconn, 2, 0, "[%s] error receiving data\n", dlconn->addr);
+	  
 	  return -1;
 	}
     }
@@ -284,9 +283,8 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
  * 'buffer'.  If the 'blockflag' is true the socket is set to blocking
  * while receiving and set back to non-blocking after done receiving.
  *
- * Return number of characters read on success (0 when no data
- * available on non-blocking socket), -1 on connection shutdown and -2
- * on error.
+ * Return number of bytes read on success (0 when no data available on
+ * non-blocking socket), -1 on connection shutdown and -2 on error.
  ***************************************************************************/
 int
 dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
@@ -299,8 +297,6 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
     {
       return -2;
     }
-  
-  fprintf (stderr, "DB receiving data (%zu), blockflag: %u\n", readlen, blockflag);
   
   /* Set socket to blocking if requested */
   if ( blockflag )
@@ -316,14 +312,11 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
   /* Recv until readlen bytes have been read */
   while ( nread < readlen )
     {
-      fprintf (stderr, "DB receiving data (%zu), nread: %d\n", readlen, nread);
-
       if ( (nrecv = recv(dlconn->link, bptr, readlen-nread, 0)) < 0 )
         {
           /* The only acceptable error is no data on non-blocking */
 	  if ( ! blockflag && ! dlp_noblockcheck() )
 	    {
-	      fprintf (stderr, "DB No data for non-blocking socket\n");
 	      nread = 0;
 	    }
 	  else
@@ -370,14 +363,15 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
  * dl_recvheader:
  *
  * Receive a DataLink packet header composed of two sequence bytes
- * ("DL"), followed a packet data length byte, followed by a header
- * payload.
+ * ("DL"), followed a header data length byte, followed by a header
+ * body.
  *
- * It should not be assumed that the populated buffer contains a
- * terminated string.
+ * The header body will be returned in buffer and will always be NULL
+ * terminated.  The buffer must be at least 255 bytes in size.  The
+ * maximum header length is effectively 254 bytes.
  *
- * Returns -1 on error or shutdown and the number of bytes in the
- * header payload on success or 0 when no data is available.
+ * Return number of bytes read on success (0 when no data available on
+ * non-blocking socket), -1 on connection shutdown and -2 on error.
  ***************************************************************************/
 int
 dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
@@ -388,31 +382,32 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
   
   if ( ! dlconn || ! buffer )
     {
-      return -1;
+      return -2;
     }
   
   if ( buflen < 255 )
     {
-      return -1;
+      dl_log_r (dlconn, 2, 0, "[%s] dl_recvheader(): buffer length to small (%zd)\n",
+		dlconn->addr, buflen);
+      return -2;
     }
-
-  fprintf (stderr, "DB receiving header\n");
-
+  
   /* Receive synchronization bytes and header length */
   if ( (bytesread = dl_recvdata (dlconn, buffer, 3, blockflag)) != 3 )
     {
-      /* Return 0 when no data is available or -1 on error */
-      return ( bytesread == 0 ) ? 0 : -1;
+      /* Bytes read but not 3 is an error */
+      if ( bytesread > 0 )
+	return -2;
+      else
+	return bytesread;
     }
-
-  fprintf (stderr, "DB received pre-header\n");
   
   /* Test synchronization bytes */
   if ( cbuffer[0] != 'D' || cbuffer[1] != 'L' )
     {
       dl_log_r (dlconn, 2, 0, "[%s] No DataLink packet detected\n",
 		dlconn->addr);
-      return -1;
+      return -2;
     }
   
   /* 3rd byte is the header length */
@@ -421,8 +416,18 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
   /* Receive header payload blocking until completely received */
   if ( (bytesread = dl_recvdata (dlconn, buffer, headerlen, 1)) != headerlen )
     {
-      return -1;
+      /* Bytes read but not headerlen is an error */
+      if ( bytesread > 0 )
+	return -2;
+      else
+	return bytesread;
     }
+  
+  /* Make sure reply is NULL terminated */
+  if ( bytesread == buflen )
+    cbuffer[bytesread-1] = '\0';
+  else
+    cbuffer[bytesread] = '\0';
   
   return bytesread;
 }  /* End of dl_recvheader() */
