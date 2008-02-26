@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.053
+ * modified 2008.057
  ***************************************************************************/
 
 #include <stdio.h>
@@ -34,6 +34,7 @@ static short int ppackets  = 0;
 static char *statefile     = 0;	    /* State file for saving/restoring state */
 static char *matchpattern  = 0;	    /* Source ID matching expression */
 static char *rejectpattern = 0;	    /* Source ID rejecting expression */
+static char *infotype      = 0;	    /* INFO type to request */
 
 static DLCP *dlconn;	            /* Connection parameters */
 
@@ -45,8 +46,9 @@ main (int argc, char **argv)
 {
   DLPacket dlpack;
   char packetdata[MAXPACKETSIZE];
+  char infobuf[1048576];
   char timestr[50];
-
+  int64_t rv;
   int endflag = 0;
   
 #ifndef WIN32
@@ -107,16 +109,37 @@ main (int argc, char **argv)
       if ( dl_reject (dlconn, rejectpattern) < 0 )
 	return -1;
     }
-  
-  /* Collect packets in streaming mode */
-  while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), endflag) == DLPACKET )
+
+  /* Request INFO and print returned XML */
+  if ( infotype )
     {
-      dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
+      if ( (rv = dl_getinfo (dlconn, infotype, infobuf, sizeof(infobuf))) < 0 )
+	{
+	  dl_log (2, 0, "Problem requesting INFO from server\n");
+	  return -1;
+	}
       
-      dl_log (0, 0, "Received %s (%lld), %s, %d\n",
-	      dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
+      /* Terminate buffer and print returned XML */
+      if ( rv == sizeof(infobuf) )
+	infobuf[rv-1] = '\0';
+      else
+	infobuf[rv] = '\0';
       
-      endflag = 1;
+      printf ("%s\n", infobuf);
+    }
+  /* Otherwise collect packets in STREAMing mode */
+  else
+    {
+      /* Collect packets in streaming mode */
+      while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), endflag) == DLPACKET )
+	{
+	  dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
+	  
+	  dl_log (0, 0, "Received %s (%lld), %s, %d\n",
+		  dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
+	  
+	  endflag = 1;
+	}
     }
   
   /*
@@ -203,6 +226,10 @@ parameter_proc (int argcount, char **argvec)
       else if (strcmp (argvec[optind], "-r") == 0)
 	{
 	  rejectpattern = argvec[++optind];
+	}
+      else if (strcmp (argvec[optind], "-i") == 0)
+	{
+	  infotype = argvec[++optind];
 	}
       else if (strcmp (argvec[optind], "-S") == 0)
 	{
@@ -305,6 +332,7 @@ usage (void)
 	   " -k secs        specify keepalive interval in seconds\n"
 	   " -m match       specify stream ID matching pattern\n"
 	   " -r reject      specify stream ID rejecting pattern\n"
+	   " -i type        request INFO type, print XML and exit\n"
 	   " -S statefile   save/restore stream state information to this file\n"
 	   "\n"
 	   " [host][:port]  Address of the SeedLink server in host:port format\n"

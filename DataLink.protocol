@@ -38,8 +38,8 @@ c  INFO type
 
 Server replies:
 
-cs ERROR value size|<error message>
-cs OK value size|<status message>
+cst ERROR value size|<error message>
+cst OK value size|<status message>
 
 Returned INFO requests:
 
@@ -47,4 +47,4 @@ c INFO type size|<XML info data of length size>
 
 Returned packets:
 
-cs PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+cst PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
