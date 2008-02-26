@@ -137,34 +137,8 @@ main (int argc, char **argv)
 	  
 	  dl_log (0, 0, "Received %s (%lld), %s, %d\n",
 		  dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
-	  
-	  endflag = 1;
 	}
     }
-  
-  /*
-  while ( ! dlconn->terminate )
-    {
-      rv = dl_collect_nb (dlconn, &dlpack, packetdata, sizeof(packetdata), 0);
-      
-      if ( rv == DLPACKET )
-	{
-	  dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
-	  
-	  dl_log (0, 0, "Received %s (%lld), %s, %d\n",
-		  dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
-	}
-      else if ( rv == DLNOPACKET )
-	{
-	  dl_log (0, 0, "DLNOPACKET: sleeping\n");
-	  usleep (500000);
-	}
-      else
-	{
-	  break;
-	}
-    }
-  */
   
   /* Make sure everything is shut down and save the state file */
   if ( dlconn->link != -1 )
