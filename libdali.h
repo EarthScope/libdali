@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.051
+ * modified: 2008.056
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -31,7 +31,7 @@ extern "C" {
 #include "portable.h"
 
 #define LIBDALI_VERSION "1.0"
-#define LIBDALI_RELEASE "2008.051"
+#define LIBDALI_RELEASE "2008.056"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */

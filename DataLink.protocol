@@ -6,31 +6,31 @@ High-precision times are epochs times in microseconds
 
 Client commands:
 
-cs  ID clientID
-  - Reply is header-only formulated as: "ID DataLink (vYYYY.DDD) :: DLPROTO:#.#"
+cst  ID clientID
+  - Reply is header-only formulated as: "ID DataLink (version) :: DLPROTO:#.#"
 
-cs  POSITION SET pktid hppkttime
+cst POSITION SET pktid hppkttime
   - pktid can be "EARLIEST" or "LATEST"
   - Reply value is packet ID on success
 
-cs  POSITION AFTER hptime
+cst  POSITION AFTER hptime
   - Reply value is packet ID on success
 
-cs  MATCH size|<match pattern of length size>
-cs  REJECT size|<reject pattern of length size>
+cst  MATCH size|<match pattern of length size>
+cst  REJECT size|<reject pattern of length size>
    - Reply value is count of current streams matched
 
 cs  WRITE streamid hpdatatime flags size|<packet data of length size>
   - Flags: N = no ack, A = ack requested
   - Reply value, when ack requested, is the inserted packet ID
 
-cs  READ pktid
+cst  READ pktid
   - Reply with either PACKET or ERROR
 
-cs  STREAM
+cst  STREAM
   - Must handle in-line IDs
 
-cs  ENDSTREAM
+cst  ENDSTREAM
   - Server returns ENDSTREAM
 
 c  INFO type

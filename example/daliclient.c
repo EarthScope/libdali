@@ -46,7 +46,9 @@ main (int argc, char **argv)
   DLPacket dlpack;
   char packetdata[MAXPACKETSIZE];
   char timestr[50];
-    
+
+  int endflag = 0;
+  
 #ifndef WIN32
   /* Signal handling, use POSIX calls with standardized semantics */
   struct sigaction sa;
@@ -107,13 +109,39 @@ main (int argc, char **argv)
     }
   
   /* Collect packets in streaming mode */
-  while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), 0) == DLPACKET )
+  while ( dl_collect (dlconn, &dlpack, packetdata, sizeof(packetdata), endflag) == DLPACKET )
     {
       dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
       
       dl_log (0, 0, "Received %s (%lld), %s, %d\n",
 	      dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
+      
+      endflag = 1;
     }
+  
+  /*
+  while ( ! dlconn->terminate )
+    {
+      rv = dl_collect_nb (dlconn, &dlpack, packetdata, sizeof(packetdata), 0);
+      
+      if ( rv == DLPACKET )
+	{
+	  dl_dltime2seedtimestr (dlpack.datatime, timestr, 1);
+	  
+	  dl_log (0, 0, "Received %s (%lld), %s, %d\n",
+		  dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
+	}
+      else if ( rv == DLNOPACKET )
+	{
+	  dl_log (0, 0, "DLNOPACKET: sleeping\n");
+	  usleep (500000);
+	}
+      else
+	{
+	  break;
+	}
+    }
+  */
   
   /* Make sure everything is shut down and save the state file */
   if ( dlconn->link != -1 )

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.053
+ * modified: 2008.056
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -894,7 +894,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 		}
 	      else if ( ! strncmp (header, "ID", 2) )
 		{
-		  dl_log_r (dlconn, 1, 2, "[%s] Received keepalive (ID) from server\n",
+		  dl_log_r (dlconn, 1, 2, "[%s] Received keepalive from server\n",
 			    dlconn->addr);
 		}
 	      else if ( ! strncmp (header, "ENDSTREAM", 9) )
@@ -924,13 +924,13 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       /* Keepalive/heartbeat interval timing logic */
       if ( dlconn->keepalive )
 	{
-	  if (dlconn->keepalive_trig == -1)  /* reset timer */
+	  if ( dlconn->keepalive_trig == -1 )  /* reset timer */
 	    {
 	      dlconn->keepalive_time = now;
 	      dlconn->keepalive_trig = 0;
 	    }
-	  else if (dlconn->keepalive_trig == 0 &&
-		   (now - dlconn->keepalive_time) > (dlconn->keepalive * DLTMODULUS))
+	  else if ( dlconn->keepalive_trig == 0 &&
+		    (now - dlconn->keepalive_time) > (dlconn->keepalive * DLTMODULUS) )
 	    {
 	      dlconn->keepalive_trig = 1;
 	    }
@@ -1049,6 +1049,9 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
   /* Process data if header received */
   if ( rv > 0 )
     {
+      /* Reset keepalive trigger */
+      dlconn->keepalive_trig = -1;
+      
       if ( ! strncmp (header, "PACKET", 6) )
 	{
 	  /* Parse PACKET header */
@@ -1104,8 +1107,6 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 		    dlconn->addr, header);
 	  return DLERROR;
 	}
-      
-      dlconn->keepalive_trig = -1;
     }
   
   /* Update timing variables */
@@ -1120,7 +1121,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	  dlconn->keepalive_trig = 0;
 	}
       else if ( dlconn->keepalive_trig == 0 &&
-		(now - dlconn->keepalive_time) > dlconn->keepalive )
+		(now - dlconn->keepalive_time) > (dlconn->keepalive * DLTMODULUS) )
 	{
 	  dlconn->keepalive_trig = 1;
 	}
