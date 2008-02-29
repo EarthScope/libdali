@@ -114,7 +114,7 @@ extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen,
 			 char *streamid, dltime_t datatime, int ack);
 extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
 			void *packetdata, size_t maxdatasize);
-extern int     dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
+extern int     dl_getinfo (DLCP *dlconn, const char *infotype, void **infodata,
 			   size_t maxinfosize);
 extern int     dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 			   size_t maxdatasize, int8_t endflag);

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.056
+ * modified: 2008.060
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -614,12 +614,15 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 /***************************************************************************
  * dl_getinfo:
  *
- * Request and receive information from the server using the INFO command.
+ * Request and receive information from the server using the INFO
+ * command.  If the maxinfosize argument is 0 memory will be allocated
+ * as needed for the INFO data result and the infodata pointer will be
+ * set to this new buffer; it is up to the caller to free this memory.
  *
  * Returns the lengh of the INFO response on success and -1 on error.
  ***************************************************************************/
 int
-dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
+dl_getinfo (DLCP *dlconn, const char *infotype, void **infodata,
 	    size_t maxinfosize)
 {
   char header[255];
@@ -629,6 +632,9 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
   int rv = 0;
   
   if ( ! dlconn || ! infotype || ! infodata )
+    return -1;
+  
+  if ( maxinfosize && ! *infodata )
     return -1;
   
   if ( dlconn->link <= 0 )
@@ -683,15 +689,27 @@ dl_getinfo (DLCP *dlconn, const char *infotype, void *infodata,
 	  return -1;
 	}
       
-      if ( infosize > maxinfosize )
+      /* If a maximum buffer size was specified check that it's large enough */
+      if ( maxinfosize && infosize > maxinfosize )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): INFO data larger (%d) than receiving buffer (%d)\n",
+	  dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): INFO data larger (%d) than the maximum size (%d)\n",
 		    dlconn->addr, infosize, maxinfosize);
 	  return -1;
 	}
       
+      /* Allocate the infobuffer if needed */
+      if ( maxinfosize == 0 )
+	{
+	  if ( ! (*infodata = malloc (infosize)) )
+	    {
+	      dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): error allocating receving buffer of %d bytes\n",
+			dlconn->addr, infosize);
+	      return -1;
+	    }
+	}
+      
       /* Receive INFO data, blocking until complete */
-      if ( (rv = dl_recvdata (dlconn, infodata, infosize, 1)) != infosize )
+      if ( (rv = dl_recvdata (dlconn, *infodata, infosize, 1)) != infosize )
 	{
 	  /* Only log an error if the connection was not shut down */
 	  if ( rv < -1 )
