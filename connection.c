@@ -622,7 +622,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
  * Returns the lengh of the INFO response on success and -1 on error.
  ***************************************************************************/
 int
-dl_getinfo (DLCP *dlconn, const char *infotype, void **infodata,
+dl_getinfo (DLCP *dlconn, const char *infotype, char **infodata,
 	    size_t maxinfosize)
 {
   char header[255];

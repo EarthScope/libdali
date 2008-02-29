@@ -46,9 +46,9 @@ main (int argc, char **argv)
 {
   DLPacket dlpack;
   char packetdata[MAXPACKETSIZE];
-  char infobuf[1048576];
   char timestr[50];
-  int64_t rv;
+  char *infobuf = 0;
+  int infolen;
   int endflag = 0;
   
 #ifndef WIN32
@@ -113,19 +113,16 @@ main (int argc, char **argv)
   /* Request INFO and print returned XML */
   if ( infotype )
     {
-      if ( (rv = dl_getinfo (dlconn, infotype, infobuf, sizeof(infobuf))) < 0 )
+      if ( (infolen = dl_getinfo (dlconn, infotype, &infobuf, 0)) < 0 )
 	{
 	  dl_log (2, 0, "Problem requesting INFO from server\n");
 	  return -1;
 	}
       
-      /* Terminate buffer and print returned XML */
-      if ( rv == sizeof(infobuf) )
-	infobuf[rv-1] = '\0';
-      else
-	infobuf[rv] = '\0';
+      printf ("%*s\n", infolen, infobuf);
       
-      printf ("%s\n", infobuf);
+      if ( infobuf )
+	free (infobuf);
     }
   /* Otherwise collect packets in STREAMing mode */
   else

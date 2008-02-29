@@ -1,2 +1,7 @@
+2008.060:
+	- Change dl_getinfo() to take a pointer-to-a-pointer for the
+	info buffer and allocate an appropriate size buffer when
+	the maxinfosize argument is 0.
+
 2008.057: 0.9
 	- Initial version, derived from libslink 2.0.
