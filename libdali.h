@@ -30,8 +30,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "1.0"
-#define LIBDALI_RELEASE "2008.056"
+#define LIBDALI_VERSION "0.9"
+#define LIBDALI_RELEASE "2008.057"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
