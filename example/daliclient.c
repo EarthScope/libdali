@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.057
+ * modified 2008.066
  ***************************************************************************/
 
 #include <stdio.h>
@@ -160,11 +160,7 @@ static int
 parameter_proc (int argcount, char **argvec)
 {
   int optind;
-  int error = 0;
-  
-  if ( argcount <= 1 )
-    error++;
-  
+    
   /* Process all command line arguments */
   for (optind = 1; optind < argcount; optind++)
     {
@@ -202,7 +198,7 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  infotype = argvec[++optind];
 	}
-      else if (strcmp (argvec[optind], "-S") == 0)
+      else if (strcmp (argvec[optind], "-x") == 0)
 	{
 	  statefile = argvec[++optind];
 	}
@@ -236,14 +232,7 @@ parameter_proc (int argcount, char **argvec)
   
   /* Report the program version */
   dl_log (0, 1, "%s version: %s\n", PACKAGE, VERSION);
-  
-  /* If errors then report the usage message and quit */
-  if ( error )
-    {
-      usage ();
-      exit (1);
-    }
-  
+    
   /* If verbosity is 2 or greater print detailed packet information */
   if ( verbose >= 2 )
     ppackets = 1;
@@ -277,7 +266,7 @@ parameter_proc (int argcount, char **argvec)
     {
       if ( dl_recoverstate (dlconn, statefile) < 0 )
 	{
-	  fprintf (stderr, "Error reading state file\n");
+	  dl_log (2, 0, "Error reading state file\n");
 	  exit (1);
 	}
     }
@@ -304,7 +293,7 @@ usage (void)
 	   " -m match       specify stream ID matching pattern\n"
 	   " -r reject      specify stream ID rejecting pattern\n"
 	   " -i type        request INFO type, print XML and exit\n"
-	   " -S statefile   save/restore stream state information to this file\n"
+	   " -x statefile   save/restore stream state information to this file\n"
 	   "\n"
 	   " [host][:port]  Address of the SeedLink server in host:port format\n"
 	   "                  if host is omitted (i.e. ':16000'), localhost is assumed\n"
