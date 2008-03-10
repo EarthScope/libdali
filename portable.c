@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.041
+ * modified: 2008.066
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -424,3 +424,36 @@ dlp_usleep (unsigned long int useconds)
 
 #endif
 }  /* End of dlp_usleep() */
+
+
+/***************************************************************************
+ * dlp_genclientid:
+ * 
+ * Generate a client ID composed of the program name, the current user
+ * name and the current process ID as a string where the fields are
+ * separated by colons:
+ *
+ * "progname:username:pid"
+ *
+ * The client ID string is written into a supplied string which must
+ * already be allocated.
+ *
+ * Returns the number of charaters written to clientid on success and
+ * -1 on error.
+ ***************************************************************************/
+int
+dlp_genclientid (char *clientid, size_t maxsize)
+{
+#if defined(DLP_WIN32)
+
+//CHAD
+
+  return 0;
+#else
+  
+//CHAD
+  //user = getlogin();
+
+  return 0;
+#endif
+}  /* End of dlp_genclientid() */
