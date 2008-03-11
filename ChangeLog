@@ -1,4 +1,4 @@
-2008.070:
+2008.070: 0.9.1
 	- Add an infomatch argument to dl_getinfo() and add the match
 	expression to the INFO request.  Allows limiting a request for
 	CONNECTIONS to specific clients.

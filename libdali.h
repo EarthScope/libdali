@@ -30,7 +30,7 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9+2008.070"
+#define LIBDALI_VERSION "0.9.1"
 #define LIBDALI_RELEASE "2008.070"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */

@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.066
+ * modified 2008.070
  ***************************************************************************/
 
 #include <stdio.h>
@@ -113,7 +113,7 @@ main (int argc, char **argv)
   /* Request INFO and print returned XML */
   if ( infotype )
     {
-      if ( (infolen = dl_getinfo (dlconn, infotype, &infobuf, 0)) < 0 )
+      if ( (infolen = dl_getinfo (dlconn, infotype, matchpattern, &infobuf, 0)) < 0 )
 	{
 	  dl_log (2, 0, "Problem requesting INFO from server\n");
 	  return -1;

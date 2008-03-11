@@ -20,7 +20,7 @@ cst  MATCH size|<match pattern of length size>
 cst  REJECT size|<reject pattern of length size>
    - Reply value is count of current streams matched
 
-cs  WRITE streamid hpdatatime flags size|<packet data of length size>
+cst  WRITE streamid hpdatatime flags size|<packet data of length size>
   - Flags: N = no ack, A = ack requested
   - Reply value, when ack requested, is the inserted packet ID
 
@@ -33,7 +33,7 @@ cst  STREAM
 cst  ENDSTREAM
   - Server returns ENDSTREAM
 
-c  INFO type
+cst  INFO type
   - Server returns INFO ...
 
 Server replies:
@@ -43,7 +43,7 @@ cst OK value size|<status message>
 
 Returned INFO requests:
 
-c INFO type size|<XML info data of length size>
+cst INFO type size|<XML info data of length size>
 
 Returned packets:
 
