@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.060
+ * modified: 2008.070
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -30,8 +30,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9+2008.060"
-#define LIBDALI_RELEASE "2008.060"
+#define LIBDALI_VERSION "0.9+2008.070"
+#define LIBDALI_RELEASE "2008.070"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -114,8 +114,8 @@ extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen,
 			 char *streamid, dltime_t datatime, int ack);
 extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
 			void *packetdata, size_t maxdatasize);
-extern int     dl_getinfo (DLCP *dlconn, const char *infotype, char **infodata,
-			   size_t maxinfosize);
+extern int     dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
+			   char **infodata, size_t maxinfosize);
 extern int     dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 			   size_t maxdatasize, int8_t endflag);
 extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,

@@ -1,3 +1,8 @@
+2008.070:
+	- Add an infomatch argument to dl_getinfo() and add the match
+	expression to the INFO request.  Allows limiting a request for
+	CONNECTIONS to specific clients.
+
 2008.060:
 	- Change dl_getinfo() to take a pointer-to-a-pointer for the
 	info buffer and allocate an appropriate size buffer when

@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.060
+ * modified: 2008.070
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -618,12 +618,14 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
  * command.  If the maxinfosize argument is 0 memory will be allocated
  * as needed for the INFO data result and the infodata pointer will be
  * set to this new buffer; it is up to the caller to free this memory.
+ * If an infomatch string is supplied it will be appended to the INFO
+ * request sent to the server.
  *
  * Returns the lengh of the INFO response on success and -1 on error.
  ***************************************************************************/
 int
-dl_getinfo (DLCP *dlconn, const char *infotype, char **infodata,
-	    size_t maxinfosize)
+dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
+	    char **infodata, size_t maxinfosize)
 {
   char header[255];
   char type[255];
@@ -650,7 +652,8 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char **infodata,
   
   /* Request information */
   /* Create packet header with command: "INFO type" */
-  headerlen = snprintf (header, sizeof(header), "INFO %s", infotype);
+  headerlen = snprintf (header, sizeof(header), "INFO %s %s", infotype,
+			(infomatch)?infomatch:"");
   
   /* Send command and packet to server */
   if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
