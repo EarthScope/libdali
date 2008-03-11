@@ -6,45 +6,47 @@ High-precision times are epochs times in microseconds
 
 Client commands:
 
-cst  ID clientID
+ID clientID
   - Reply is header-only formulated as: "ID DataLink (version) :: DLPROTO:#.#"
 
-cst POSITION SET pktid hppkttime
+POSITION SET pktid hppkttime
   - pktid can be "EARLIEST" or "LATEST"
   - Reply value is packet ID on success
 
-cst  POSITION AFTER hptime
+POSITION AFTER hptime
   - Reply value is packet ID on success
 
-cst  MATCH size|<match pattern of length size>
-cst  REJECT size|<reject pattern of length size>
+MATCH size|<match pattern of length size>
+REJECT size|<reject pattern of length size>
    - Reply value is count of current streams matched
 
-cst  WRITE streamid hpdatatime flags size|<packet data of length size>
+WRITE streamid hpdatatime flags size|<packet data of length size>
   - Flags: N = no ack, A = ack requested
   - Reply value, when ack requested, is the inserted packet ID
 
-cst  READ pktid
+READ pktid
   - Reply with either PACKET or ERROR
 
-cst  STREAM
+STREAM
   - Must handle in-line IDs
 
-cst  ENDSTREAM
+ENDSTREAM
   - Server returns ENDSTREAM
 
-cst  INFO type
+INFO type [match]
+  - STATUS, STREAMS, CONNECTIONS
+  - A match expression can be supplied with CONNECTIONS
   - Server returns INFO ...
 
 Server replies:
 
-cst ERROR value size|<error message>
-cst OK value size|<status message>
+ERROR value size|<error message>
+OK value size|<status message>
 
 Returned INFO requests:
 
-cst INFO type size|<XML info data of length size>
+INFO type size|<XML info data of length size>
 
 Returned packets:
 
-cst PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
+PACKET <streamid> <pktid> <hppackettime> <hpdatatime> <size>|<packet data of length size>
