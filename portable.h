@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.071
+ * modified: 2008.072
  ***************************************************************************/
 
 #ifndef PORTABLE_H
@@ -44,8 +44,8 @@ extern "C" {
    * on the architecture.  Currently the assumptions are:
    * Linux => glibc2 (DLP_GLIBC2)
    * Sun => Solaris (DLP_SOLARIS)
+   * BSD => BSD libraries, including Apple Mac OS X (DLP_BSD)
    * WIN32 => WIN32 and Windows Sockets 2 (DLP_WIN32)
-   * Apple => Mac OS X (DLP_DARWIN)
    */
 
 #if defined(__linux__) || defined(__linux)
@@ -59,6 +59,7 @@ extern "C" {
   #include <netinet/in.h>
   #include <netdb.h>
   #include <sys/time.h>
+  #include <sys/utsname.h>
    
 #elif defined(__sun__) || defined(__sun)
   #define DLP_SOLARIS 1
@@ -73,6 +74,23 @@ extern "C" {
   #include <netinet/in.h>
   #include <netdb.h>
   #include <sys/time.h>
+  #include <sys/utsname.h>
+
+#elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
+  #define DLP_BSD 1
+
+  #include <stdlib.h>
+  #include <stdio.h>
+  #include <unistd.h>
+  #include <stdarg.h>
+  #include <inttypes.h>
+  #include <sys/socket.h>
+  #include <netinet/in.h>
+  #include <netdb.h>
+  #include <sys/time.h>
+  #include <sys/utsname.h>
+  #include <string.h>
+  #include <ctype.h>
 
 #elif defined(WIN32)
   #define DLP_WIN32 1
@@ -80,6 +98,7 @@ extern "C" {
   #include <windows.h>
   #include <stdarg.h>
   #include <winsock.h>
+  #include <process.h>
 
   #define snprintf _snprintf
   #define vsnprintf _vsnprintf
@@ -93,20 +112,6 @@ extern "C" {
   typedef unsigned int uint32_t;
   typedef signed __int64 int64_t;
   typedef unsigned __int64 uint64_t;
-
-#elif defined(__APPLE__)
-  #define DLP_DARWIN 1
-
-  #include <stdlib.h>
-  #include <unistd.h>
-  #include <stdarg.h>
-  #include <inttypes.h>
-  #include <errno.h>
-  #include <sys/types.h>
-  #include <sys/socket.h>
-  #include <netinet/in.h>
-  #include <netdb.h>
-  #include <sys/time.h>
 
 #else
   typedef signed char int8_t;
@@ -132,7 +137,7 @@ extern int dlp_openfile (const char *filename, char perm);
 extern const char *dlp_strerror (void);
 extern int64_t dlp_time (void);
 extern void dlp_usleep (unsigned long int useconds);
-extern int dlp_genclientid (char *clientid, size_t maxsize);
+extern int dlp_genclientid (char *progname, char *clientid, size_t maxsize);
 
 #ifdef __cplusplus
 }

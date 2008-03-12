@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.070
+ * modified 2008.072
  ***************************************************************************/
 
 #include <stdio.h>
@@ -68,9 +68,6 @@ main (int argc, char **argv)
   sigaction (SIGPIPE, &sa, NULL);
 #endif
   
-  /* Allocate and initialize a new connection description */
-  dlconn = dl_newdlcp();
-  
   /* Process given parameters (command line and parameter file) */
   if ( parameter_proc (argc, argv) < 0 )
     {
@@ -78,9 +75,6 @@ main (int argc, char **argv)
       fprintf (stderr, "Try '-h' for detailed help\n");
       return -1;
     }
-  
-  /* Set the client ID */
-  dlconn->clientid = "daliclient";
   
   /* Connect to server */
   if ( dl_connect (dlconn) < 0 )
@@ -159,8 +153,10 @@ main (int argc, char **argv)
 static int
 parameter_proc (int argcount, char **argvec)
 {
+  char *address = 0;
+  int keepalive = -1;
   int optind;
-    
+  
   /* Process all command line arguments */
   for (optind = 1; optind < argcount; optind++)
     {
@@ -184,7 +180,7 @@ parameter_proc (int argcount, char **argvec)
 	}
       else if (strcmp (argvec[optind], "-k") == 0)
 	{
-	  dlconn->keepalive = strtoul (argvec[++optind], NULL, 10);
+	  keepalive = strtoul (argvec[++optind], NULL, 10);
 	}
       else if (strcmp (argvec[optind], "-m") == 0)
 	{
@@ -207,9 +203,9 @@ parameter_proc (int argcount, char **argvec)
 	  fprintf(stderr, "Unknown option: %s\n", argvec[optind]);
 	  exit (1);
 	}
-      else if ( ! dlconn->addr )
+      else if ( ! address )
 	{
-	  dlconn->addr = argvec[optind];
+	  address = argvec[optind];
 	}
       else
 	{
@@ -219,14 +215,21 @@ parameter_proc (int argcount, char **argvec)
     }
   
   /* Make sure a server was specified */
-  if ( ! dlconn->addr )
+  if ( ! address )
     {
       fprintf(stderr, "No DataLink server specified\n\n");
       fprintf(stderr, "Usage: %s [options] [host][:port]\n", PACKAGE);
       fprintf(stderr, "Try '-h' for detailed help\n");
       exit (1);
     }
-
+  
+  /* Allocate and initialize a new connection description */
+  dlconn = dl_newdlcp (address, argvec[0]);
+  
+  /* Set keepalive parameter, allow for valid value of 0 */
+  if ( keepalive >= 0 )
+    dlconn->keepalive = keepalive;
+  
   /* Initialize the verbosity for the dl_log function */
   dl_loginit (verbose, NULL, NULL, NULL, NULL);
   

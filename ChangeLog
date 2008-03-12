@@ -1,3 +1,11 @@
+2008.072: 0.9.2
+	- Implement dlp_genclientid() routine to generate client IDs.
+        - Change dl_newdlcp() to take address and progname arguments,
+	these strings will be copied and stored in the DLCP struct
+	and freed with dl_freedlcp().  dl_newdlcp() now sets the client
+	ID using dlp_genclientid().
+	- Change portable define DLP_DARWIN to DLP_BSD to cover all BSDs.
+
 2008.070: 0.9.1
 	- Add an infomatch argument to dl_getinfo() and add the match
 	expression to the INFO request.  Allows limiting a request for

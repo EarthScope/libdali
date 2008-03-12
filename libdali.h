@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.070
+ * modified: 2008.072
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -30,8 +30,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9.1"
-#define LIBDALI_RELEASE "2008.070"
+#define LIBDALI_VERSION "0.9.2"
+#define LIBDALI_RELEASE "2008.072"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -75,8 +75,8 @@ typedef struct DLLog_s
 /* DataLink connection parameters */
 typedef struct DLCP_s
 {
-  char       *addr;             /* The host:port of DataLink server */
-  char       *clientid;         /* Client program ID */
+  char        addr[100];        /* The host:port of DataLink server */
+  char        clientid[200];    /* Client program ID */
   int         keepalive;        /* Interval to send keepalive/heartbeat (secs) */
   
   /* Connection parameters maintained interally */
@@ -103,7 +103,7 @@ typedef struct DLPacket_s
 
 
 /* connection.c */
-extern DLCP *  dl_newdlcp (void);
+extern DLCP *  dl_newdlcp (char *address, char *progname);
 extern void    dl_freedlcp (DLCP *dlconn);
 extern int     dl_getid (DLCP *dlconn, int parseresp);
 extern int64_t dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime);

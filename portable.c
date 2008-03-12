@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.071
+ * modified: 2008.072
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -433,7 +433,7 @@ dlp_usleep (unsigned long int useconds)
  * name and the current process ID as a string where the fields are
  * separated by colons:
  *
- * "progname:username:pid"
+ * "progname:username:pid:arch"
  *
  * The client ID string is written into a supplied string which must
  * already be allocated.
@@ -442,30 +442,51 @@ dlp_usleep (unsigned long int useconds)
  * -1 on error.
  ***************************************************************************/
 int
-dlp_genclientid (char *clientid, size_t maxsize)
+dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 {
 #if defined(DLP_WIN32)
+  char *prog = 0;
+  char user[256];
+  DWORD max_user = 256;
+  int pid = _getpid(void);
   
-  //CHAD
+  GetUserName (user, &max_user);
+  
+  snprintf (clientid, maxsize, "%s:%s:%ld:Win32",
+	    (prog)?prog:"",
+	    (user)?user:"",
+	    (long) pid);
   
   return 0;
 #else
-
-----------
-# if HAVE___PROGNAME		    /* Linux */
-    extern char *__progname;
-    return __progname;
-# elif HAVE_GETEXECNAME		    /* Solaris */
-----------
-
-  char *progname = getprogname();
-  char *login = getlogin();
-  pid_t pid = getpid();
+  char osver[100];
+  char *prog = 0;
+  char *user = getlogin(void);
+  pid_t pid = getpid(void);
+  struct utsname myname;
   
-  snprintf (clientid, maxsize, "%s:%s:%ld",
-	    (progname)?progname:"",
-	    (login)?login:"",
-	    (long) pid);
+  /* Do a simple basename() for any supplied progname */
+  if ( progname && (prog = strrchr (progname, '/')) )
+    {
+      prog++;
+    }
+  
+  /* Lookup system name and release */
+  if ( ! uname (&myname) )
+    {
+      snprintf (osver, sizeof(osver), "%s-%s",
+		myname.sysname, myname.release);
+    }
+  else
+    {
+      osver[0] = '\0';
+    }
+  
+  snprintf (clientid, maxsize, "%s:%s:%ld:%s",
+	    (prog)?prog:"",
+	    (user)?user:"",
+	    (long) pid,
+	    osver);
   
   return 0;
 #endif

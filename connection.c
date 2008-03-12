@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.070
+ * modified: 2008.072
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -19,15 +19,17 @@
 /***************************************************************************
  * dl_newdlcp:
  *
- * Allocate, initialze and return a pointer to a new DLCP struct.
+ * Allocate, initialze and return a pointer to a new DLCP struct.  The
+ * address string should be in "host:port" format and the program name
+ * is usually just argv[0].
  *
  * Returns allocated DLCP struct on success, NULL on error.
  ***************************************************************************/
 DLCP *
-dl_newdlcp (void)
+dl_newdlcp (char *address, char *progname)
 {
   DLCP *dlconn;
-
+  
   dlconn = (DLCP *) malloc (sizeof(DLCP));
   
   if ( dlconn == NULL )
@@ -37,8 +39,8 @@ dl_newdlcp (void)
     }
   
   /* Set defaults */
-  dlconn->addr         = 0;
-  dlconn->clientid     = 0;
+  strncpy (dlconn->addr, address, sizeof(dlconn->addr));
+  dlp_genclientid (progname, dlconn->clientid, sizeof(dlconn->clientid));
   dlconn->keepalive    = 600;
   dlconn->link         = -1;
   dlconn->serverproto  = 0.0;
@@ -66,6 +68,9 @@ dl_freedlcp (DLCP *dlconn)
 {
   if ( dlconn->addr )
     free (dlconn->addr);
+  
+  if ( dlconn->clientid )
+    free (dlconn->clientid);
   
   if ( dlconn->log )
     free (dlconn->log);
