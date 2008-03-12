@@ -493,7 +493,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
     }
   
   /* Lookup system name and release */
-  if ( uname (&myname) <= 0 )
+  if ( uname (&myname) >= 0 )
     {
       snprintf (osver, sizeof(osver), "%s-%s",
 		myname.sysname, myname.release);
