@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.066
+ * modified: 2008.071
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -445,15 +445,28 @@ int
 dlp_genclientid (char *clientid, size_t maxsize)
 {
 #if defined(DLP_WIN32)
-
-//CHAD
-
+  
+  //CHAD
+  
   return 0;
 #else
-  
-//CHAD
-  //user = getlogin();
 
+----------
+# if HAVE___PROGNAME		    /* Linux */
+    extern char *__progname;
+    return __progname;
+# elif HAVE_GETEXECNAME		    /* Solaris */
+----------
+
+  char *progname = getprogname();
+  char *login = getlogin();
+  pid_t pid = getpid();
+  
+  snprintf (clientid, maxsize, "%s:%s:%ld",
+	    (progname)?progname:"",
+	    (login)?login:"",
+	    (long) pid);
+  
   return 0;
 #endif
 }  /* End of dlp_genclientid() */

@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.066
+ * modified: 2008.071
  ***************************************************************************/
 
 #ifndef PORTABLE_H
@@ -132,7 +132,7 @@ extern int dlp_openfile (const char *filename, char perm);
 extern const char *dlp_strerror (void);
 extern int64_t dlp_time (void);
 extern void dlp_usleep (unsigned long int useconds);
-extern int dlp_genclientid (char *clientid, size_t maxsize);
+  extern int dlp_genclientid (char *clientid, size_t maxsize);
 
 #ifdef __cplusplus
 }
