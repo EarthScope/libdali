@@ -445,17 +445,34 @@ int
 dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 {
 #if defined(DLP_WIN32)
+  char osver[100];
   char *prog = 0;
   char user[256];
   DWORD max_user = 256;
+  DWORD dwVersion = 0;
+  DWORD dwMajorVersion = 0;
+  DWORD dwMinorVersion = 0;
+  DWORD dwBuild = 0;
   int pid = _getpid(void);
   
-  GetUserName (user, &max_user);
+  /* Look up current user name */
+  if ( ! GetUserName (user, &max_user) )
+    {
+      user[0] = '\0';
+    }
   
-  snprintf (clientid, maxsize, "%s:%s:%ld:Win32",
+  /* Get Windows version */
+  dwVersion = GetVersion();
+  dwMajorVersion = (DWORD)(LOBYTE(LOWORD(dwVersion)));
+  dwMinorVersion = (DWORD)(HIBYTE(LOWORD(dwVersion)));
+  if (dwVersion < 0x80000000)
+    dwBuild = (DWORD)(HIWORD(dwVersion));
+  
+  snprintf (clientid, maxsize, "%s:%s:%ld:Win32-%d.%d (%d)",
 	    (prog)?prog:"",
 	    (user)?user:"",
-	    (long) pid);
+	    (long) pid,
+	    dwMajorVersion, dwMinorVersion, dwBuild);
   
   return 0;
 #else
