@@ -461,8 +461,8 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 #else
   char osver[100];
   char *prog = 0;
-  char *user = getlogin(void);
-  pid_t pid = getpid(void);
+  char *user = getlogin ();
+  pid_t pid = getpid ();
   struct utsname myname;
   
   /* Do a simple basename() for any supplied progname */
