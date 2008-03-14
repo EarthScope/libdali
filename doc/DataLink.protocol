@@ -1,10 +1,19 @@
 
-All server-client exchange tokens are ASCII
-All exchanges are prefixed by a 3 byte sequence:
-'D', 'L' and a 1-byte unsigned integer (length of header)
-High-precision times are epochs times in microseconds
+DataLink packet structure:
 
-Client commands:
+'preheader' + 'header' + 'data'
+
+All data packets include a preheader and header, some exchanges do not
+include a data portion.  A preheader is a 3 byte sequence, the first
+two bytes are the sequence bytes 'D' and 'L' and the third is an
+unsigned 1-byte integer indicating the size of the header portion
+following the preheader.  The header is a maximum of 255 bytes in
+length.  The header portion is always composed of ASCII characters.
+
+High-precision time values are defined as Unix/POSIX epoch times in
+microseconds.
+
+Client commands are listed below
 
 ID clientID
   - Reply is header-only formulated as: "ID DataLink (version) :: DLPROTO:#.#"
