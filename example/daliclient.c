@@ -138,6 +138,9 @@ main (int argc, char **argv)
   /* Save the state file */
   if ( statefile )
     dl_savestate (dlconn, statefile);
+
+  if ( dlconn )
+    dl_freedlcp (dlconn);
   
   return 0;
 }  /* End of main() */
@@ -217,6 +220,7 @@ parameter_proc (int argcount, char **argvec)
   /* Make sure a server was specified */
   if ( ! address )
     {
+      fprintf(stderr, "%s version: %s\n\n", PACKAGE, VERSION);
       fprintf(stderr, "No DataLink server specified\n\n");
       fprintf(stderr, "Usage: %s [options] [host][:port]\n", PACKAGE);
       fprintf(stderr, "Try '-h' for detailed help\n");
