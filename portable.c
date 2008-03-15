@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.072
+ * modified: 2008.074
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -478,8 +478,9 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 #else
   char osver[100];
   char *prog = 0;
-  char *user = getlogin ();
+  char *user = 0;
   pid_t pid = getpid ();
+  struct passwd *pw;
   struct utsname myname;
   
   /* Do a simple basename() for any supplied progname */
@@ -490,6 +491,12 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   else if ( progname )
     {
       prog = progname;
+    }
+  
+  /* Look up real user name */
+  if ( (pw = getpwuid(getuid())) )
+    {
+      user = pw->pw_name;
     }
   
   /* Lookup system name and release */

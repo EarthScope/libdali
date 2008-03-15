@@ -60,6 +60,8 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <sys/utsname.h>
+  #include <sys/types.h>
+  #include <pwd.h>
    
 #elif defined(__sun__) || defined(__sun)
   #define DLP_SOLARIS 1
@@ -75,6 +77,8 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <sys/utsname.h>
+  #include <sys/types.h>
+  #include <pwd.h>
 
 #elif defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__NetBSD__)
   #define DLP_BSD 1
@@ -89,8 +93,10 @@ extern "C" {
   #include <netdb.h>
   #include <sys/time.h>
   #include <sys/utsname.h>
+  #include <sys/types.h>
   #include <string.h>
   #include <ctype.h>
+  #include <pwd.h>
 
 #elif defined(WIN32)
   #define DLP_WIN32 1
