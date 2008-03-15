@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.053
+ * Version: 2008.075
  ***************************************************************************/
 
 #include <stdio.h>
@@ -256,7 +256,12 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   /* Send data */
   if ( dl_senddata (dlconn, wirepacket, (3+headerlen+packetlen)) < 0 )
     {
-      dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
+      /* Check for a message from the server */
+      if ( (bytesread = dl_recvheader (dlconn, resp, resplen, 0)) > 0 )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] %s", dlconn->addr, resp);
+	}
+      
       return -1;
     }
   
