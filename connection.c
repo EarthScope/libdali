@@ -66,12 +66,6 @@ dl_newdlcp (char *address, char *progname)
 void
 dl_freedlcp (DLCP *dlconn)
 {
-  if ( dlconn->addr )
-    free (dlconn->addr);
-  
-  if ( dlconn->clientid )
-    free (dlconn->clientid);
-  
   if ( dlconn->log )
     free (dlconn->log);
   
