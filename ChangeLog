@@ -1,4 +1,4 @@
-2008.074:
+2008.074: 0.9.3
 	- Update dlp_genclientid() to lookup the current user without
 	needing an interactive shell login.
 	- Fix dl_freedlcp(), address and client ID strings are now static.
