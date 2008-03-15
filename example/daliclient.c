@@ -113,7 +113,7 @@ main (int argc, char **argv)
 	  return -1;
 	}
       
-      printf ("%*s\n", infolen, infobuf);
+      printf ("%.*s\n", infolen, infobuf);
       
       if ( infobuf )
 	free (infobuf);
