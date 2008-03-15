@@ -456,7 +456,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   int pid = getpid();
 
    /* Do a simple basename() for any supplied progname */
-  if ( progname && (prog = strrchr (progname, '\')) )
+  if ( progname && (prog = strrchr (progname, '\\')) )
     {
       prog++;
     }
