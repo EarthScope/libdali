@@ -33,7 +33,7 @@ extern "C" {
 #define LIBDALI_VERSION "0.9.3"
 #define LIBDALI_RELEASE "2008.074"
 
-#define MAXPACKETSIZE       16384    /* Maximum packet size */
+#define MAXPACKETSIZE       16384    /* Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
 #define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
 
@@ -183,7 +183,6 @@ typedef struct DLstrlist_s {
 extern int  dl_strparse (const char *string, const char *delim, DLstrlist **list);
 extern int  dl_strncpclean (char *dest, const char *source, int length);
 extern int  dl_addtostring (char **string, char *add, char *delim, int maxlen);
-
 
 
 #ifdef __cplusplus
