@@ -453,7 +453,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   DWORD dwMajorVersion = 0;
   DWORD dwMinorVersion = 0;
   DWORD dwBuild = 0;
-  int pid = _getpid(void);
+  int pid = getpid();
   
   /* Look up current user name */
   if ( ! GetUserName (user, &max_user) )

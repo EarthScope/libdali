@@ -104,6 +104,8 @@ extern "C" {
   #include <windows.h>
   #include <stdarg.h>
   #include <winsock.h>
+  #include <stdio.h>
+  #include <unistd.h>
   #include <process.h>
 
   #define snprintf _snprintf
