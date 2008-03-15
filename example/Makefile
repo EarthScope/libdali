@@ -15,7 +15,7 @@ LDFLAGS = -L..
 LDLIBS = -ldali
 
 # For SunOS/Solaris uncomment the following line
-LDLIBS = -ldali -lsocket -lnsl -lrt
+#LDLIBS = -ldali -lsocket -lnsl -lrt
 
 BIN = daliclient
  
