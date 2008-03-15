@@ -454,6 +454,17 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   DWORD dwMinorVersion = 0;
   DWORD dwBuild = 0;
   int pid = getpid();
+
+   /* Do a simple basename() for any supplied progname */
+  if ( progname && (prog = strrchr (progname, '/')) )
+    {
+      prog++;
+    }
+  else if ( progname )
+    {
+      prog = progname;
+    }
+  
   
   /* Look up current user name */
   if ( ! GetUserName (user, &max_user) )
@@ -492,7 +503,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
     {
       prog = progname;
     }
-  
+ 
   /* Look up real user name */
   if ( (pw = getpwuid(getuid())) )
     {
