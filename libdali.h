@@ -18,7 +18,7 @@
  * Written by Chad Trabant
  *   IRIS Data Management Center
  *
- * modified: 2008.072
+ * modified: 2008.075
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -66,9 +66,9 @@ typedef int64_t dltime_t;
 typedef struct DLLog_s
 {
   void (*log_print)();
-  const char * logprefix;
+  const char *logprefix;
   void (*diag_print)();
-  const char * errprefix;
+  const char *errprefix;
   int  verbosity;
 } DLLog;
 
@@ -159,14 +159,14 @@ extern int     dl_log (int level, int verb, ...);
 extern int     dl_log_r (const DLCP *dlconn, int level, int verb, ...);
 extern int     dl_log_rl (DLLog *log, int level, int verb, ...);
 extern void    dl_loginit (int verbosity,
-			   void (*log_print)(const char*), const char * logprefix,
-			   void (*diag_print)(const char*), const char * errprefix);
+			   void (*log_print)(char*), const char *logprefix,
+			   void (*diag_print)(char*), const char *errprefix);
 extern void    dl_loginit_r (DLCP *dlconn, int verbosity,
-			     void (*log_print)(const char*), const char * logprefix,
-			     void (*diag_print)(const char*), const char * errprefix);
+			     void (*log_print)(char*), const char *logprefix,
+			     void (*diag_print)(char*), const char *errprefix);
 extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
-			      void (*log_print)(const char*), const char * logprefix,
-			      void (*diag_print)(const char*), const char * errprefix);
+			      void (*log_print)(char*), const char *logprefix,
+			      void (*diag_print)(char*), const char *errprefix);
 
 /* statefile.c */
 extern int  dl_recoverstate (DLCP *dlconn, const char *statefile);

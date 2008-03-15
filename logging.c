@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.053
+ * modified: 2008.075
  ***************************************************************************/
 
 #include <stdio.h>
@@ -16,8 +16,8 @@
 #include "libdali.h"
 
 void dl_loginit_main (DLLog *logp, int verbosity,
-		      void (*log_print)(const char*), const char *logprefix,
-		      void (*diag_print)(const char*), const char *errprefix);
+		      void (*log_print)(char*), const char *logprefix,
+		      void (*diag_print)(char*), const char *errprefix);
 
 int dl_log_main (DLLog *logp, int level, int verb, va_list *varlist);
 
@@ -34,8 +34,8 @@ DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
  ***************************************************************************/
 void
 dl_loginit (int verbosity,
-	    void (*log_print)(const char*), const char *logprefix,
-	    void (*diag_print)(const char*), const char *errprefix)
+	    void (*log_print)(char*), const char *logprefix,
+	    void (*diag_print)(char*), const char *errprefix)
 {
   dl_loginit_main (&gDLLog, verbosity, log_print, logprefix, diag_print, errprefix);
 }  /* End of dl_loginit() */
@@ -52,8 +52,8 @@ dl_loginit (int verbosity,
  ***************************************************************************/
 void
 dl_loginit_r (DLCP *dlconn, int verbosity,
-	      void (*log_print)(const char*), const char *logprefix,
-	      void (*diag_print)(const char*), const char *errprefix)
+	      void (*log_print)(char*), const char *logprefix,
+	      void (*diag_print)(char*), const char *errprefix)
 {
   if ( ! dlconn )
     return;
@@ -86,8 +86,8 @@ dl_loginit_r (DLCP *dlconn, int verbosity,
  ***************************************************************************/
 DLLog *
 dl_loginit_rl (DLLog *log, int verbosity,
-	       void (*log_print)(const char*), const char *logprefix,
-	       void (*diag_print)(const char*), const char *errprefix)
+	       void (*log_print)(char*), const char *logprefix,
+	       void (*diag_print)(char*), const char *errprefix)
 {
   DLLog *logp;
 
@@ -121,9 +121,9 @@ dl_loginit_rl (DLLog *log, int verbosity,
  * This function modifies the logging parameters in the passed DLLog.
  *
  * Any log/error printing functions indicated must except a single
- * argument, namely a string (const char *).  The dl_log() and
- * dl_log_r() functions format each message and then pass the result
- * on to the log/error printing functions.
+ * argument, namely a string (char *).  The dl_log() and dl_log_r()
+ * functions format each message and then pass the result on to the
+ * log/error printing functions.
  *
  * If the log/error prefixes have been set they will be pre-pended to the
  * message.
@@ -136,8 +136,8 @@ dl_loginit_rl (DLLog *log, int verbosity,
  ***************************************************************************/
 void
 dl_loginit_main (DLLog *logp, int verbosity,
-		 void (*log_print)(const char*), const char *logprefix,
-		 void (*diag_print)(const char*), const char *errprefix)
+		 void (*log_print)(char*), const char *logprefix,
+		 void (*diag_print)(char*), const char *errprefix)
 {
   if ( ! logp )
     return;
@@ -288,7 +288,7 @@ dl_log_rl (DLLog *log, int level, int verb, ...)
  * 2+ : Error messagess, printed using diag_print with errprefix
  *
  * This function builds the log/error message and passes to it as a
- * string (const char *) to the functions defined with dl_loginit() or
+ * string (char *) to the functions defined with dl_loginit() or
  * dl_loginit_r().  If the log/error printing functions have not been
  * defined messages will be printed with fprintf, log messages to
  * stdout and error messages to stderr.
@@ -337,7 +337,7 @@ dl_log_main (DLLog *logp, int level, int verb, va_list *varlist)
 
 	  if ( logp->diag_print != NULL )
 	    {
-	      logp->diag_print ((const char *) message);
+	      logp->diag_print (message);
 	    }
 	  else
 	    {
@@ -360,7 +360,7 @@ dl_log_main (DLLog *logp, int level, int verb, va_list *varlist)
 
 	  if ( logp->diag_print != NULL )
 	    {
-	      logp->diag_print ((const char *) message);
+	      logp->diag_print (message);
 	    }
 	  else
 	    {
@@ -383,7 +383,7 @@ dl_log_main (DLLog *logp, int level, int verb, va_list *varlist)
 
 	  if ( logp->log_print != NULL )
 	    {
-	      logp->log_print ((const char *) message);
+	      logp->log_print (message);
 	    }
 	  else
 	    {
