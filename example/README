@@ -4,7 +4,7 @@ directory.
 
 -- daliclient.c --
 
-An example SeedLink client written in C that demonstrates general
+An example DataLink client written in C that demonstrates general
 usage of libdali.  A Makefile is provided to build the client.  The
 client does not exercise all of the functionality of libdali.  For a
 more comprehensive example the developer is referred to the source
@@ -20,6 +20,6 @@ Windows: to compile daliclient.c use the Nmake compatible Makefile.win
 
 -- streamlist.conf --
 
-An example stream list that can be used with the -l argument of
-slclient or with the dl_read_streamlist() function from libdali.
+An example stream list that can be used with the -m or -r arguments
+of daliclient or with the dl_read_streamlist() function from libdali.
 

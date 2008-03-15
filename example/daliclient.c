@@ -302,7 +302,7 @@ usage (void)
 	   " -i type        request INFO type, print XML and exit\n"
 	   " -x statefile   save/restore stream state information to this file\n"
 	   "\n"
-	   " [host][:port]  Address of the SeedLink server in host:port format\n"
+	   " [host][:port]  Address of the DataLink server in host:port format\n"
 	   "                  if host is omitted (i.e. ':16000'), localhost is assumed\n"
 	   "                  if :port is omitted (i.e. 'localhost'), 16000 is assumed\n\n");
   
