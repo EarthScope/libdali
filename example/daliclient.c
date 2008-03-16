@@ -220,9 +220,9 @@ parameter_proc (int argcount, char **argvec)
   /* Make sure a server was specified */
   if ( ! address )
     {
-      fprintf(stderr, "%s version: %s\n\n", PACKAGE, VERSION);
       fprintf(stderr, "No DataLink server specified\n\n");
-      fprintf(stderr, "Usage: %s [options] [host][:port]\n", PACKAGE);
+      fprintf(stderr, "%s version: %s\n\n", PACKAGE, VERSION);
+      fprintf(stderr, "Usage: %s [options] [host][:][port]\n", PACKAGE);
       fprintf(stderr, "Try '-h' for detailed help\n");
       exit (1);
     }
@@ -289,7 +289,7 @@ parameter_proc (int argcount, char **argvec)
 static void
 usage (void)
 {
-  fprintf (stderr, "\nUsage: %s [options] [host][:port]\n\n", PACKAGE);
+  fprintf (stderr, "\nUsage: %s [options] [host][:][port]\n\n", PACKAGE);
   fprintf (stderr,
 	   " ## General program options ##\n"
 	   " -V             report program version\n"
@@ -302,7 +302,7 @@ usage (void)
 	   " -i type        request INFO type, print XML and exit\n"
 	   " -x statefile   save/restore stream state information to this file\n"
 	   "\n"
-	   " [host][:port]  Address of the DataLink server in host:port format\n"
+	   " [host][:][port]  Address of the DataLink server in host:port format\n"
 	   "                  if host is omitted (i.e. ':16000'), localhost is assumed\n"
 	   "                  if :port is omitted (i.e. 'localhost'), 16000 is assumed\n\n");
   
