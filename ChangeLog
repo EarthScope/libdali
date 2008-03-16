@@ -1,4 +1,4 @@
-2008.075:
+2008.075: 0.9.4
 	- Replace redundant error message for unsuccessful sending of
 	WRITE commands with a check for reply from server in
 	dl_sendpacket().
