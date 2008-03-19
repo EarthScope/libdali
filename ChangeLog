@@ -1,3 +1,6 @@
+2008.078:
+	- Use io.h header instead of unistd.h for Win32.
+
 2008.075: 0.9.4
 	- Replace redundant error message for unsuccessful sending of
 	WRITE commands with a check for reply from server in
