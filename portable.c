@@ -17,7 +17,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.074
+ * modified: 2008.168
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -186,6 +186,41 @@ dlp_noblockcheck (void)
   /* no data available for NONBLOCKing IO */
   return 0;
 }  /* End of dlp_noblockcheck() */
+
+
+/***************************************************************************
+ * dlp_setioalarm:
+ *
+ * Set a network I/O alarm timer, the timeout is specified in seconds.
+ * The timer is disabled by setting the timeout to zero.  On most
+ * platforms this will cause a SIGALARM signal to be sent to the
+ * calling process after timeout seconds have elapsed.
+ *
+ * Return -1 on error and 0 on success.
+ ***************************************************************************/
+int
+dlp_setioalarm (int timeout)
+{
+#if defined(DLP_WIN32)
+  /* Non-operation for Win32 */  
+  
+#else
+  struct itimerval itval;
+  
+  itval.it_interval.tv_sec = 0;
+  itval.it_interval.tv_usec = 0;
+  itval.it_value.tv_sec = timeout;
+  itval.it_value.tv_usec = 0;
+  
+  if ( setitimer (ITIMER_REAL, &itval, NULL) )
+    {
+      return -1;
+    }
+  
+#endif
+  
+  return 0;
+}  /* End of dlp_setioalarm() */
 
 
 /***************************************************************************

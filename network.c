@@ -105,6 +105,13 @@ dl_connect (DLCP *dlconn)
       return -1;
     }
   
+  /* Set socket I/O timeouts if socket options are defined */
+#if defined (SO_RCVTIMEO) && defined (SO_SNDTIMEO)
+  //if ( setsockopt (sock, SOL_SOCKET, 
+  //CHAD
+
+#endif
+  
   /* Connect socket */
   if ( (dlp_sockconnect (sock, (struct sockaddr *) &addr, addrlen)) )
     {
@@ -325,7 +332,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
 	      nread = 0;
 	    }
 	  else
-	    {	      
+	    {
 	      dl_log_r (dlconn, 2, 0, "[%s] recv(%d): %d %s\n",
 			dlconn->addr, dlconn->link, nrecv, dlp_strerror ());
 	      nread = -2;

@@ -42,6 +42,7 @@ dl_newdlcp (char *address, char *progname)
   strncpy (dlconn->addr, address, sizeof(dlconn->addr));
   dlp_genclientid (progname, dlconn->clientid, sizeof(dlconn->clientid));
   dlconn->keepalive    = 600;
+  dlconn->iotimeout    = 60;
   dlconn->link         = -1;
   dlconn->serverproto  = 0.0;
   dlconn->pktid        = 0;

@@ -139,6 +139,7 @@ extern int dlp_sockclose (int sock);
 extern int dlp_sockblock (int sock);
 extern int dlp_socknoblock (int sock);
 extern int dlp_noblockcheck (void);
+extern int dlp_setioalarm (int timeout);
 extern int dlp_getaddrinfo (char * nodename, char * nodeport, 
 			    struct sockaddr * addr, size_t * addrlen);
 extern int dlp_openfile (const char *filename, char perm);
