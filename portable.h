@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.072
+ * modified: 2008.168
  ***************************************************************************/
 
 #ifndef PORTABLE_H
@@ -139,8 +139,9 @@ extern int dlp_sockclose (int sock);
 extern int dlp_sockblock (int sock);
 extern int dlp_socknoblock (int sock);
 extern int dlp_noblockcheck (void);
+extern int dlp_setsocktimeo (int socket, int timeout);
 extern int dlp_setioalarm (int timeout);
-extern int dlp_getaddrinfo (char * nodename, char * nodeport, 
+extern int dlp_getaddrinfo (char * nodename, char * nodeport,
 			    struct sockaddr * addr, size_t * addrlen);
 extern int dlp_openfile (const char *filename, char perm);
 extern const char *dlp_strerror (void);

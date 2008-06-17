@@ -189,6 +189,55 @@ dlp_noblockcheck (void)
 
 
 /***************************************************************************
+ * dlp_setsocktimeo:
+ *
+ * Set socket I/O timeout if such an option exists.
+ *
+ * Return -1 on error, 0 when not possible and 1 on success.
+ ***************************************************************************/
+int
+dlp_setsocktimeo (int socket, int timeout)
+{
+#if defined(DLP_WIN32)
+  int tval = timeout * 1000;
+  
+  if ( setsockopt (socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&tval, sizeof(tval)) )
+    {
+      return -1;
+    }
+  tval = timeout * 1000;
+  if ( setsockopt (socket, SOL_SOCKET, SO_SNDTIMEO, (char*)&tval, sizeof(tval)) )
+    {
+      return -1;
+    }
+  
+#else
+  /* Set socket I/O timeouts if socket options are defined */
+#if defined (SO_RCVTIMEO) && defined (SO_SNDTIMEO)
+  struct timeval tval;
+  
+  tval.tv_sec = timeout;
+  tval.tv_usec = 0;
+  
+  if ( setsockopt (socket, SOL_SOCKET, SO_RCVTIMEO, &tval, sizeof (tval)) )
+    {
+      return -1;
+    }
+  if ( setsockopt (socket, SOL_SOCKET, SO_SNDTIMEO, &tval, sizeof (tval)) )
+    {
+      return -1;
+    }
+#else
+  return 0;
+#endif
+  
+#endif
+  
+  return 1;
+}  /* End of dlp_setsocktimeo() */
+
+
+/***************************************************************************
  * dlp_setioalarm:
  *
  * Set a network I/O alarm timer, the timeout is specified in seconds.

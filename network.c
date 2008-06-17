@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.075
+ * Version: 2008.168
  ***************************************************************************/
 
 #include <stdio.h>
@@ -105,12 +105,25 @@ dl_connect (DLCP *dlconn)
       return -1;
     }
   
-  /* Set socket I/O timeouts if socket options are defined */
-#if defined (SO_RCVTIMEO) && defined (SO_SNDTIMEO)
-  //if ( setsockopt (sock, SOL_SOCKET, 
-  //CHAD
-
-#endif
+  /* Set socket I/O timeouts if possible */
+  if ( dlconn->iotimeout )
+    {
+      int timeout = (dlconn->iotimeout > 0) ? dlconn->iotimeout : - dlconn->iotimeout;
+      
+      int rv = dlp_setsocktimeo (sock, timeout);
+      
+      if ( rv == -1 )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] Error setting socket timeout\n", dlconn->addr);
+	  dlp_sockclose (sock);
+	  return -1;
+	}
+      else if ( rv == 1 )
+	{
+	  /* Negate timeout to indicate socket timeouts are set */
+	  dlconn->iotimeout = - timeout;
+	}
+    }
   
   /* Connect socket */
   if ( (dlp_sockconnect (sock, (struct sockaddr *) &addr, addrlen)) )
@@ -173,6 +186,8 @@ dl_disconnect (DLCP *dlconn)
 int
 dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
 {
+  int rv;
+  
   /* Set socket to blocking */
   if ( dlp_sockblock (dlconn->link) )
     {
@@ -181,11 +196,33 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
       return -1;
     }
   
+  /* Set timeout alarm if needed */
+  if ( dlconn->iotimeout > 0 )
+    {
+      if ( dlp_setioalarm (dlconn->iotimeout) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] error setting network I/O timeout\n",
+		    dlconn->addr);
+	}
+    }
+  
+  // CHAD, handle alarm and socket timeout
+
   /* Send data */
   if ( send (dlconn->link, buffer, sendlen, 0) < 0 )
     {
       dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
       return -1;
+    }
+  
+  /* Cancel timeout alarm if set */
+  if ( dlconn->iotimeout > 0 )
+    {
+      if ( dlp_setioalarm (0) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] error cancelling network I/O timeout\n",
+		    dlconn->addr);
+	}
     }
   
   /* Set socket to non-blocking */
