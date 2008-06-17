@@ -1,3 +1,10 @@
+2008.169: 0.9.5
+	- Add DLCP.iotimeout parameter and set the socket timeout
+	options (SO_SNDTIMEO and SO_RCVTIMEO) if they exist on the
+	system, otherwise use an alarm timer to interrupt send/recv
+	calls.  These measures should reset connections in bad network
+	environments.  Timeout defaults to 60 seconds.
+
 2008.078:
 	- Use io.h header instead of unistd.h for Win32.
 

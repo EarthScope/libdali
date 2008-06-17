@@ -7,7 +7,7 @@
  * Written by Chad Trabant, 
  *   IRIS Data Management Center
  *
- * Version: 2008.168
+ * Version: 2008.169
  ***************************************************************************/
 
 #include <stdio.h>
@@ -186,8 +186,6 @@ dl_disconnect (DLCP *dlconn)
 int
 dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
 {
-  int rv;
-  
   /* Set socket to blocking */
   if ( dlp_sockblock (dlconn->link) )
     {
@@ -206,10 +204,8 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
 	}
     }
   
-  // CHAD, handle alarm and socket timeout
-
   /* Send data */
-  if ( send (dlconn->link, buffer, sendlen, 0) < 0 )
+  if ( send (dlconn->link, buffer, sendlen, 0) != sendlen )
     {
       dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
       return -1;
@@ -357,7 +353,17 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
 	  return -2;
 	}
     }
-
+  
+  /* Set timeout alarm if needed */
+  if ( dlconn->iotimeout > 0 )
+    {
+      if ( dlp_setioalarm (dlconn->iotimeout) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] error setting network I/O timeout\n",
+		    dlconn->addr);
+	}
+    }
+  
   /* Recv until readlen bytes have been read */
   while ( nread < readlen )
     {
@@ -391,6 +397,16 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
           bptr += nrecv;
           nread += nrecv;
         }
+    }
+  
+  /* Cancel timeout alarm if set */
+  if ( dlconn->iotimeout > 0 )
+    {
+      if ( dlp_setioalarm (0) )
+	{
+	  dl_log_r (dlconn, 2, 0, "[%s] error cancelling network I/O timeout\n",
+		    dlconn->addr);
+	}
     }
   
   /* Set socket to non-blocking if set to blocking */
