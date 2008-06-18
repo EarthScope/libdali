@@ -1,5 +1,5 @@
-/***************************************************************************
- * libdali.h:
+/***********************************************************************//**
+ * @file libdali.h
  * 
  * Interface declarations for the DataLink library (libdali).
  *
@@ -15,10 +15,9 @@
  * GNU-LGPL and further information can be found here:
  * http://www.gnu.org/
  *
- * Written by Chad Trabant
- *   IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.075
+ * modified: 2008.170
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -31,7 +30,7 @@ extern "C" {
 #include "portable.h"
 
 #define LIBDALI_VERSION "0.9.5"
-#define LIBDALI_RELEASE "2008.169"
+#define LIBDALI_RELEASE "2008.170"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -46,60 +45,63 @@ extern "C" {
 #define DLPACKET    1
 #define DLNOPACKET  2
 
-/* Define the high precision time tick interval as 1/modulus seconds *
+/** High precision time tick interval as 1/modulus seconds *
  * Default modulus of 1000000 defines tick interval as a microsecond */
 #define DLTMODULUS 1000000
 
-/* Error code for routines that normally return a high precision time.
+/** Error code for routines that normally return a high precision time.
  * The time value corresponds to '1902/1/1 00:00:00.000000' with the
  * default DLTMODULUS */
 #define DLTERROR -2145916800000000LL
 
-/* Macros to scale between Unix/POSIX epoch time & high precision time */
+/** Macro to scale a Unix/POSIX epoch time to a high precision time */
 #define DL_EPOCH2DLTIME(X) X * (dltime_t) DLTMODULUS
+/** Macro to scale a high precision time to a Unix/POSIX epoch time */
 #define DL_DLTIME2EPOCH(X) X / DLTMODULUS
-
-/* Require a large (>= 64-bit) integer type for dltime_t */
+  
+/** Data type for high-precision time values.
+ *  Require a large (>= 64-bit) integer type */
 typedef int64_t dltime_t;
 
-/* Logging parameters */
+/** Logging parameters */
 typedef struct DLLog_s
 {
-  void (*log_print)();
-  const char *logprefix;
-  void (*diag_print)();
-  const char *errprefix;
-  int  verbosity;
+  void (*log_print)();          /**< Function pointer for log message printing */
+  const char *logprefix;        /**< Log message prefix */
+  void (*diag_print)();         /**< Function pointer for diagnostic/error message printing */
+  const char *errprefix;        /**< Error message prefix */
+  int  verbosity;               /**< Verbosity level */
 } DLLog;
 
-/* DataLink connection parameters */
+/** DataLink connection parameters */
 typedef struct DLCP_s
 {
-  char        addr[100];        /* The host:port of DataLink server */
-  char        clientid[200];    /* Client program ID */
-  int         keepalive;        /* Interval to send keepalive/heartbeat (seconds) */
-  int         iotimeout;        /* Timeout for network I/O operations (seconds) */
+  char        addr[100];        /**< The host:port of DataLink server */
+  char        clientid[200];    /**< Client program ID as "progname:username:pid:arch", see dlp_genclientid() */
+  int         keepalive;        /**< Interval to send keepalive/heartbeat (seconds) */
+  int         iotimeout;        /**< Timeout for network I/O operations (seconds) */
   
   /* Connection parameters maintained internally */
-  int         link;		/* The network socket descriptor */
-  float       serverproto;      /* Server version of the DataLink protocol */
-  int64_t     pktid;            /* Packet ID of last packet received */
-  dltime_t    pkttime;          /* Packet time of last packet received */
-  int8_t      keepalive_trig;   /* Send keepalive trigger */
-  dltime_t    keepalive_time;   /* Keepalive time stamp */
-  int8_t      terminate;        /* Boolean flag to control connection termination */
-  int8_t      streaming;        /* Boolean flag to indicate streaming status */
+  int         link;		/**< The network socket descriptor, maintained internally */
+  float       serverproto;      /**< Server version of the DataLink protocol, maintained internally */
+  int64_t     pktid;            /**< Packet ID of last packet received, maintained internally */
+  dltime_t    pkttime;          /**< Packet time of last packet received, maintained internally */
+  int8_t      keepalive_trig;   /**< Send keepalive trigger, maintained internally */
+  dltime_t    keepalive_time;   /**< Keepalive time stamp, maintained internally */
+  int8_t      terminate;        /**< Boolean flag to control connection termination, maintained internally */
+  int8_t      streaming;        /**< Boolean flag to indicate streaming status, maintained internally */
   
-  DLLog      *log;              /* Logging parameters */
+  DLLog      *log;              /**< Logging parameters, maintained internally */
 } DLCP;
 
+/** DataLink packet */
 typedef struct DLPacket_s
 {
-  char        streamid[MAXSTREAMID]; /* Stream ID */
-  int64_t     pktid;            /* Packet ID */
-  dltime_t    pkttime;          /* Packet time */
-  dltime_t    datatime;         /* Data time */
-  int32_t     datasize;         /* Data size in bytes */
+  char        streamid[MAXSTREAMID]; /**< Stream ID */
+  int64_t     pktid;            /**< Packet ID */
+  dltime_t    pkttime;          /**< Packet time */
+  dltime_t    datatime;         /**< Data time */
+  int32_t     datasize;         /**< Data size in bytes */
 } DLPacket;
 
 
@@ -133,8 +135,8 @@ extern void    dl_disconnect (DLCP *dlconn);
 extern int     dl_exchangeID (DLCP *dlconn);
 extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
 extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
-			      void *packetbuf, size_t packetlen,
-			      void *resp, int resplen);
+			      void *databuf, size_t datalen,
+			      void *respbuf, int resplen);
 extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
 extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
 
