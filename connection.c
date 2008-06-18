@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.072
+ * modified: 2008.169
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -1148,7 +1148,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	}
     }
   
-  return DLNOPACKET;
+  return ( dlconn->terminate ) ? DLENDED: DLNOPACKET;
 }  /* End of dl_collect_nb() */
 
 

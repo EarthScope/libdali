@@ -77,8 +77,8 @@ typedef struct DLCP_s
 {
   char        addr[100];        /* The host:port of DataLink server */
   char        clientid[200];    /* Client program ID */
-  int         keepalive;        /* Interval to send keepalive/heartbeat (secs) */
-  int         iotimeout;        /* Timeout (seconds) for network I/O operations */
+  int         keepalive;        /* Interval to send keepalive/heartbeat (seconds) */
+  int         iotimeout;        /* Timeout for network I/O operations (seconds) */
   
   /* Connection parameters maintained internally */
   int         link;		/* The network socket descriptor */

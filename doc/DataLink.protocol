@@ -1,19 +1,39 @@
 
-DataLink packet structure:
+DataLink protocol 1.0
+2008/6/17
 
-'preheader' + 'header' + 'data'
+--------------------------  General concepts  ------------------------------
+
+Clients submit commands to servers and the servers respond with either
+status replies or data content.
+
+Client commands and server replies are encapsulated in DataLink packet
+structures.  All exchanges are formulated using ASCII characters with
+the exception of a single byte length parameter (preheader) and packet
+data.
+
+Various client commands and server responses contain time stamps
+represented as high-precision time values defined as Unix/POSIX epoch
+times in microseconds.
+
+
+-----------------------   DataLink packet structure  -----------------------
+
+'preheader' + 'header' [+ 'data']
 
 All data packets include a preheader and header, some exchanges do not
-include a data portion.  A preheader is a 3 byte sequence, the first
-two bytes are the sequence bytes 'D' and 'L' and the third is an
-unsigned 1-byte integer indicating the size of the header portion
-following the preheader.  The header is a maximum of 255 bytes in
-length.  The header portion is always composed of ASCII characters.
+include a data portion.  The preheader is always a 3 byte sequence,
+the first two bytes are the sequence bytes 'D' and 'L' and the third
+is an unsigned 1-byte integer indicating the size of the header
+portion following the preheader.  The header is a maximum of 255 bytes
+in length.  The header portion is always composed of ASCII characters.
 
-High-precision time values are defined as Unix/POSIX epoch times in
-microseconds.
 
-Client commands are listed below
+---------------------------  Client commands  ------------------------------
+
+Client commands go into the header portion of a DataLink packet,
+optionally there is data associated with the command.
+
 
 ID clientID
   - Reply is header-only formulated as: "ID DataLink (version) :: DLPROTO:#.#"
@@ -47,7 +67,7 @@ INFO type [match]
   - A match expression can be supplied with CONNECTIONS
   - Server returns INFO ...
 
-Server replies:
+---------------------------  Server responses ------------------------------
 
 ERROR value size|<error message>
 OK value size|<status message>

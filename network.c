@@ -114,12 +114,14 @@ dl_connect (DLCP *dlconn)
       
       if ( rv == -1 )
 	{
-	  dl_log_r (dlconn, 2, 0, "[%s] Error setting socket timeout\n", dlconn->addr);
+	  dl_log_r (dlconn, 2, 0, "[%s] cannot set socket timeout\n", dlconn->addr);
 	  dlp_sockclose (sock);
 	  return -1;
 	}
       else if ( rv == 1 )
 	{
+	  dl_log_r (dlconn, 1, 2, "[%s] using system socket timeouts\n", dlconn->addr);
+	  
 	  /* Negate timeout to indicate socket timeouts are set */
 	  dlconn->iotimeout = - timeout;
 	}
