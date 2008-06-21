@@ -5,7 +5,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.169
+ * modified: 2008.173
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -45,6 +45,7 @@ dl_newdlcp (char *address, char *progname)
   dlconn->iotimeout    = 60;
   dlconn->link         = -1;
   dlconn->serverproto  = 0.0;
+  dlconn->writeperm    = 0;
   dlconn->pktid        = 0;
   dlconn->pkttime      = 0;
   dlconn->keepalive_trig = -1;
@@ -177,6 +178,12 @@ dl_getid (DLCP *dlconn, int parseresp)
 		dl_log_r (dlconn, 1, 1,
 			  "[%s] dl_getid(): could not parse protocol version from DLPROTO flag: %s\n",
 			  dlconn->addr, tptr);
+	    }
+
+	  /* Search for write permission flag */
+	  if ( (tptr = strstr(capptr, "WRITE")) )
+	    {
+	      dlconn->writeperm = 1;
 	    }
 	}
     }

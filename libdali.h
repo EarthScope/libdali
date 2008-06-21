@@ -17,7 +17,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.170
+ * modified: 2008.173
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -29,8 +29,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9.5"
-#define LIBDALI_RELEASE "2008.170"
+#define LIBDALI_VERSION "0.9.6"
+#define LIBDALI_RELEASE "2008.173"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -84,6 +84,7 @@ typedef struct DLCP_s
   /* Connection parameters maintained internally */
   int         link;		/**< The network socket descriptor, maintained internally */
   float       serverproto;      /**< Server version of the DataLink protocol, maintained internally */
+  int8_t      writeperm;        /**< Write permission status from server, maintained internally */
   int64_t     pktid;            /**< Packet ID of last packet received, maintained internally */
   dltime_t    pkttime;          /**< Packet time of last packet received, maintained internally */
   int8_t      keepalive_trig;   /**< Send keepalive trigger, maintained internally */

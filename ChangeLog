@@ -1,3 +1,8 @@
+2008.173:
+	- Add DLCP.writeperm flag and set to true if the server
+	returns the write permission flag in it's capabilities
+	string.
+
 2008.169: 0.9.5
 	- Add DLCP.iotimeout parameter and set the socket timeout
 	options (SO_SNDTIMEO and SO_RCVTIMEO) if they exist on the
