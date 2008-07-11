@@ -1,5 +1,5 @@
-/***************************************************************************
- * portable.c:
+/***********************************************************************//**
+ * @file portable.c:
  * 
  * Platform portability routines.
  *
@@ -15,9 +15,9 @@
  * GNU-LGPL and further information can be found here:
  * http://www.gnu.org/
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.168
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -32,13 +32,13 @@
 #include "libdali.h"
 
 
-/***************************************************************************
- * dlp_sockstartup:
+/************************************************************************//**
+ * @brief Start up socket subsystem (only does something for Win32)
  *
  * Startup the network socket layer.  At the moment this is only meaningful
- * for the WIN32 platform.
+ * for the WIN32 platform and requests Windows sockets version 2.2.
  *
- * Returns -1 on errors and 0 on success.
+ * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
 dlp_sockstartup (void)
@@ -59,24 +59,28 @@ dlp_sockstartup (void)
 }  /* End of dlp_sockstartup() */
 
 
-/***************************************************************************
- * dlp_sockconnect:
+/***********************************************************************//**
+ * @brief Connect a network socket
  *
- * Connect a network socket.
+ * Connect a network socket and perform error checking.
  *
- * Returns -1 on errors and 0 on success.
+ * @param socket Network socket descriptor
+ * @param inetaddr The struct sockaddr, passed to connect()
+ * @param addrlen Length of @a inetaddr, passed to connect()
+ *
+ * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockconnect (int sock, struct sockaddr * inetaddr, int addrlen)
+dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen)
 {
 #if defined(DLP_WIN32)
-  if ((connect (sock, inetaddr, addrlen)) == SOCKET_ERROR)
+  if ((connect (socket, inetaddr, addrlen)) == SOCKET_ERROR)
     {
       if (WSAGetLastError() != WSAEWOULDBLOCK)
 	return -1;
     }
 #else
-  if ((connect (sock, inetaddr, addrlen)) == -1)
+  if ((connect (socket, inetaddr, addrlen)) == -1)
     {
       if (errno != EINPROGRESS)
 	return -1;
@@ -87,46 +91,50 @@ dlp_sockconnect (int sock, struct sockaddr * inetaddr, int addrlen)
 }  /* End of dlp_sockconnect() */
 
 
-/***************************************************************************
- * dlp_sockclose:
+/***********************************************************************//**
+ * @brief Close a network socket
  *
  * Close a network socket.
  *
- * Returns -1 on errors and 0 on success.
+ * @param socket Network socket descriptor
+ *
+ * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockclose (int sock)
+dlp_sockclose (int socket)
 {
 #if defined(DLP_WIN32)
-  return closesocket (sock);
+  return closesocket (socket);
 #else
-  return close (sock);
+  return close (socket);
 #endif
 }  /* End of dlp_sockclose() */
 
 
-/***************************************************************************
- * dlp_sockblock:
+/***********************************************************************//**
+ * @brief Set a network socket to blocking mode
  *
- * Set a network socket to blocking.
+ * Set a network socket to blocking mode.
  *
- * Returns -1 on errors and 0 on success.
+ * @param socket Network socket descriptor
+ *
+ * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockblock (int sock)
+dlp_sockblock (int socket)
 {
 #if defined(DLP_WIN32)
   u_long flag = 0;
   
-  if (ioctlsocket(sock, FIONBIO, &flag) == -1)
+  if (ioctlsocket(socket, FIONBIO, &flag) == -1)
     return -1;
   
 #else
-  int flags = fcntl(sock, F_GETFL, 0);
+  int flags = fcntl(socket, F_GETFL, 0);
   
   flags &= (~O_NONBLOCK);
   
-  if (fcntl(sock, F_SETFL, flags) == -1)
+  if (fcntl(socket, F_SETFL, flags) == -1)
     return -1;
 
 #endif
@@ -135,27 +143,29 @@ dlp_sockblock (int sock)
 }  /* End of dlp_sockblock() */
 
 
-/***************************************************************************
- * dlp_socknoblock:
+/***********************************************************************//**
+ * @brief Set a network socket to non-blocking mode
  *
- * Set a network socket to non-blocking.
+ * Set a network socket to non-blocking mode.
  *
- * Returns -1 on errors and 0 on success.
+ * @param socket Network socket descriptor
+ *
+ * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_socknoblock (int sock)
+dlp_socknoblock (int socket)
 {
 #if defined(DLP_WIN32)
   u_long flag = 1;
 
-  if (ioctlsocket(sock, FIONBIO, &flag) == -1)
+  if (ioctlsocket(socket, FIONBIO, &flag) == -1)
     return -1;
 
 #else
-  int flags = fcntl(sock, F_GETFL, 0);
+  int flags = fcntl(socket, F_GETFL, 0);
 
   flags |= O_NONBLOCK;
-  if (fcntl(sock, F_SETFL, flags) == -1)
+  if (fcntl(socket, F_SETFL, flags) == -1)
     return -1;
 
 #endif
@@ -164,10 +174,13 @@ dlp_socknoblock (int sock)
 }  /* End of dlp_socknoblock() */
 
 
-/***************************************************************************
- * dlp_noblockcheck:
+/***********************************************************************//**
+ * @brief Check if socket action would have blocked
  *
- * Return -1 on error and 0 on success (meaning no data for a non-blocking
+ * Check the global error status and test if the error indicates that
+ * the recent socket action failed because it would have blocked.
+ *
+ * @return -1 on error and 0 on success (meaning no data for a non-blocking
  * socket).
  ***************************************************************************/
 int
@@ -188,12 +201,20 @@ dlp_noblockcheck (void)
 }  /* End of dlp_noblockcheck() */
 
 
-/***************************************************************************
- * dlp_setsocktimeo:
+/***********************************************************************//**
+ * @brief Set socket I/O timeout
  *
- * Set socket I/O timeout if such an option exists.
+ * Set socket I/O timeout if such an option exists.  On Win32 and
+ * other platforms where SO_RCVTIMEO and SO_SNDTIMEO are defined this
+ * sets the SO_RCVTIMEO and SO_SNDTIMEO socket options using
+ * setsockopt() to the @a timeout value (specified in seconds).
  *
- * Return -1 on error, 0 when not possible and 1 on success.
+ * Solaris does not implelement socket-level timeout options.
+ *
+ * @param socket Network socket descriptor
+ * @param timeout Alarm timeout in seconds
+ *
+ * @return -1 on error, 0 when not possible and 1 on success.
  ***************************************************************************/
 int
 dlp_setsocktimeo (int socket, int timeout)
@@ -237,15 +258,18 @@ dlp_setsocktimeo (int socket, int timeout)
 }  /* End of dlp_setsocktimeo() */
 
 
-/***************************************************************************
- * dlp_setioalarm:
+/***********************************************************************//**
+ * @brief Set a network I/O real time alarm
  *
- * Set a network I/O alarm timer, the timeout is specified in seconds.
- * The timer is disabled by setting the timeout to zero.  On most
- * platforms this will cause a SIGALARM signal to be sent to the
- * calling process after timeout seconds have elapsed.
+ * Set a network I/O alarm timer, the @a timeout is specified in
+ * seconds.  The timer is disabled by setting the timeout to zero.  On
+ * most platforms this will cause a SIGALARM signal to be sent to the
+ * calling process after @a timeout seconds have elapsed.  This
+ * function does nothing under Win32.
  *
- * Return -1 on error and 0 on success.
+ * @param timeout Alarm timeout in seconds
+ *
+ * @return -1 on error and 0 on success.
  ***************************************************************************/
 int
 dlp_setioalarm (int timeout)
@@ -272,8 +296,8 @@ dlp_setioalarm (int timeout)
 }  /* End of dlp_setioalarm() */
 
 
-/***************************************************************************
- * dlp_getaddrinfo:
+/***********************************************************************//**
+ * @brief Resolve IP address and prepare paramters for connect()
  *
  * Resolve IP addresses and provide parameters needed for connect().
  * On Win32 this will use gethostbyname() for portability (only newer
@@ -285,11 +309,16 @@ dlp_setioalarm (int timeout)
  * independent (i.e. IPv4, IPv6, etc.).  Unfortunately it is not
  * supported on many older platforms.
  *
- * Return 0 on success and non-zero on error.
+ * @param nodename Hostname to resolve
+ * @param nodeport Port number to connect to
+ * @param addr Returned struct sockaddr for connect()
+ * @param addrlen Returned length of @a addr
+ *
+ * @return 0 on success and non-zero on error.
  ***************************************************************************/
 int
-dlp_getaddrinfo (char * nodename, char * nodeport,
-		 struct sockaddr * addr, size_t * addrlen)
+dlp_getaddrinfo (char *nodename, char *nodeport,
+		 struct sockaddr *addr, size_t *addrlen)
 {
 #if defined(DLP_WIN32)
   struct hostent *result;
@@ -376,17 +405,20 @@ dlp_getaddrinfo (char * nodename, char * nodeport,
 }  /* End of dlp_getaddrinfo() */
 
 
-/***************************************************************************
- * dlp_openfile:
+/***********************************************************************//**
+ * @brief Open a file stream
  *
- * Open a specified file and return the file descriptor.  The perm
+ * Open a specified file and return the file descriptor.  The @a perm
  * character is interpreted the following way:
  *
- * perm:
+ * @a perm:
  *  'r', open file with read-only permissions
  *  'w', open file with read-write permissions, creating if necessary.
  *
- * Returns the return value of open(), generally this is a positive
+ * @param filename File to open
+ * @param perm Permission flag
+ *
+ * @return The return value of open(), generally this is a positive
  * file descriptor on success and -1 on error.
  ***************************************************************************/
 int
@@ -404,10 +436,10 @@ dlp_openfile (const char *filename, char perm)
 }  /* End of dlp_openfile() */
 
 
-/***************************************************************************
- * dlp_strerror:
+/***********************************************************************//**
+ * @brief Return a description of the last system error.
  *
- * Return a description of the last system error, in the case of Win32
+ * @return A description of the last system error, in the case of Win32
  * this will be the last Windows Sockets error.
  ***************************************************************************/
 const char *
@@ -426,14 +458,14 @@ dlp_strerror (void)
 }  /* End of dlp_strerror() */
 
 
-/***************************************************************************
- * dlp_time:
+/***********************************************************************//**
+ * @brief Determine the current system time
  *
- * Get the current time from the system as a dltime_t value.  On the
- * WIN32 platform this function has millisecond resulution, on *nix
- * platforms this function has microsecond resolution.
+ * Determine the current time from the system as a dltime_t value.  On
+ * the WIN32 platform this function has millisecond resulution, on
+ * Unix platforms this function has microsecond resolution.
  *
- * Return a double precision Unix/POSIX epoch time.
+ * @return Current time as a dltime_t value.
  ***************************************************************************/
 int64_t
 dlp_time (void)
@@ -484,11 +516,14 @@ dlp_time (void)
 }  /* End of dlp_time() */
 
 
-/***************************************************************************
- * dlp_usleep:
+/***********************************************************************//**
+ * @brief Sleep for a specified number of microseconds
  * 
  * Sleep for a given number of microseconds.  Under Win32 use SleepEx()
- * and for all others use the POSIX.4 nanosleep().
+ * and for all others use the POSIX.4 nanosleep(), which can be
+ * interrupted by signals.
+ *
+ * @param useconds Microseconds to sleep.
  ***************************************************************************/
 void
 dlp_usleep (unsigned long int useconds)
@@ -510,8 +545,8 @@ dlp_usleep (unsigned long int useconds)
 }  /* End of dlp_usleep() */
 
 
-/***************************************************************************
- * dlp_genclientid:
+/***********************************************************************//**
+ * @brief Generate a DataLink client ID from system & process information
  * 
  * Generate a client ID composed of the program name, the current user
  * name and the current process ID as a string where the fields are
@@ -522,7 +557,11 @@ dlp_usleep (unsigned long int useconds)
  * The client ID string is written into a supplied string which must
  * already be allocated.
  *
- * Returns the number of charaters written to clientid on success and
+ * @param progname Name of program, usually argv[0]
+ * @param clientid Generated client ID string will be written to this string
+ * @param maxsize Maximum bytes to write to @a clientid string.
+ *
+ * @return the number of charaters written to clientid on success and
  * -1 on error.
  ***************************************************************************/
 int

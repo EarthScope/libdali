@@ -1,7 +1,10 @@
-2008.192: 0.9.7
+2008.193: 1.0
 	- Modify behavior of dl_read() to consume data from a packet
 	that is too large for the supplied buffer.
 	- Generalize the names of the arguments to dl_splitstreamid().
+	- Parse PACKETSIZE capabilities flag from server, store in
+	new DLCP.maxpktsize and check size in dl_write().
+	- Add documentation tagging for Doxygen to all sources.
 
 2008.173: 0.9.6
 	- Add DLCP.writeperm flag and set to true if the server

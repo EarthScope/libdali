@@ -46,6 +46,7 @@ dl_newdlcp (char *address, char *progname)
   dlconn->iotimeout    = 60;
   dlconn->link         = -1;
   dlconn->serverproto  = 0.0;
+  dlconn->maxpktsize   = 0;
   dlconn->writeperm    = 0;
   dlconn->pktid        = 0;
   dlconn->pkttime      = 0;
@@ -186,7 +187,19 @@ dl_getid (DLCP *dlconn, int parseresp)
 			  "[%s] dl_getid(): could not parse protocol version from DLPROTO flag: %s\n",
 			  dlconn->addr, tptr);
 	    }
-
+	  
+	  /* Parse server packet size flag: "PACKETSIZE:<#>" if present */
+	  if ( (tptr = strstr(capptr, "PACKETSIZE")) )
+	    {
+	      /* Parse protocol version as an integer */
+	      ret = sscanf (tptr, "PACKETSIZE:%d", &dlconn->maxpktsize);
+	      
+	      if ( ret != 1 )
+		dl_log_r (dlconn, 1, 1,
+			  "[%s] dl_getid(): could not parse packet size from PACKETSIZE flag: %s\n",
+			  dlconn->addr, tptr);
+	    }
+	  
 	  /* Search for write permission flag */
 	  if ( (tptr = strstr(capptr, "WRITE")) )
 	    {
@@ -194,7 +207,7 @@ dl_getid (DLCP *dlconn, int parseresp)
 	    }
 	}
     }
-
+  
   return 0;
 }  /* End of dl_getid() */
 
@@ -512,12 +525,20 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   
   if ( dlconn->link <= 0 )
     return -1;
-
+  
   /* Sanity check that connection is not in streaming mode */
   if ( dlconn->streaming )
     {
       dl_log_r (dlconn, 1, 1, "[%s] dl_write(): Connection in streaming mode, cannot continue\n",
 		dlconn->addr);
+      return -1;
+    }
+  
+  /* Sanity check that packet data is not larger than max packet size if known */
+  if ( dlconn->maxpktsize > 0 && packetlen > dlconn->maxpktsize )
+    {
+      dl_log_r (dlconn, 1, 1, "[%s] dl_write(): Packet length (%d) greater than max packet size (%d)\n",
+		dlconn->addr, packetlen, dlconn->maxpktsize);
       return -1;
     }
   

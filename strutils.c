@@ -1,11 +1,11 @@
-/***************************************************************************
- * strutils.c
+/***********************************************************************//**
+ * @file strutils.c
  *
- * Routines for string manipulation
+ * Generic routines for string manipulation
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.032
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <stdio.h>
@@ -18,17 +18,24 @@
 #include "libdali.h"
 
 
-/***************************************************************************
- * dl_strparse:
+/***********************************************************************//**
+ * @brief Parse/split a string on a specified delimiter
  *
- * splits a 'string' on 'delim' and puts each part into a linked list
+ * Splits a 'string' on 'delim' and puts each part into a linked list
  * pointed to by 'list' (a pointer to a pointer).  The last entry has
  * it's 'next' set to 0.  All elements are NULL terminated strings.
- * If both 'string' and 'delim' are NULL then the linked list is
- * traversed and the memory used is free'd and the list pointer is
- * set to NULL.
  *
- * Returns the number of elements added to the list, or 0 when freeing
+ * It is up to the caller to free the memory associated with the
+ * returned list.  To facilitate freeing this special string list
+ * dl_strparse() can be called with both 'string' and 'delim' set to
+ * NULL and then the linked list is traversed and the memory used is
+ * free'd and the list pointer is set to NULL.
+ *
+ * @param string String to parse/split
+ * @param delim Delimiter to split string on
+ * @param list Returned list of sub-strings.
+ *
+ * @return The number of elements added to the list, or 0 when freeing
  * the linked list.
  ***************************************************************************/
 int
@@ -105,8 +112,8 @@ dl_strparse (const char *string, const char *delim, DLstrlist **list)
 }  /* End of dl_strparse() */
 
 
-/***************************************************************************
- * dl_strncpclean:
+/***********************************************************************//**
+ * @brief Copy a string while removing space charaters
  *
  * Copy 'length' characters from 'source' to 'dest' while removing all
  * spaces.  The result is left justified and always null terminated.
@@ -114,8 +121,12 @@ dl_strparse (const char *string, const char *delim, DLstrlist **list)
  * destination string must have enough room needed for the non-space
  * characters within 'length' and the null terminator.
  * 
- * Returns the number of characters (not including the null terminator) in
- * the destination string.
+ * @param dest Destination string
+ * @param source String to copy
+ * @param length Copy up to a maximum of this many characters to @dest
+ *
+ * @return The number of characters (not including the null
+ * terminator) in the destination string.
  ***************************************************************************/
 int
 dl_strncpclean (char *dest, const char *source, int length)
@@ -137,13 +148,18 @@ dl_strncpclean (char *dest, const char *source, int length)
 }  /* End of dl_strncpclean() */
 
 
-/***************************************************************************
- * dl_addtostring:
+/***********************************************************************//**
+ * @brief Concatinate one string to another growing the destination as needed
  *
  * Concatinate one string to another with a delimiter in-between
- * growing the target string as needed up to a maximum length.
+ * growing the destination string as needed up to a maximum length.
  * 
- * Return 0 on success, -1 on memory allocation error and -2 when
+ * @param string Destination string to be added to
+ * @param add String to add to @a string
+ * @param delim Optional delimiter between added strings (cannot be NULL, but can be an empty string)
+ * @param maxlen Maximum number of bytes to grow @a string
+ *
+ * @return 0 on success, -1 on memory allocation error and -2 when
  * string would grow beyond maximum length.
  ***************************************************************************/
 int

@@ -1,5 +1,5 @@
-/***************************************************************************
- * portable.h:
+/***********************************************************************//**
+ * @file portable.h:
  * 
  * Platform specific headers.  This file provides a basic level of platform
  * portability.
@@ -18,7 +18,7 @@
  *
  * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.168
+ * modified: 2008.193
  ***************************************************************************/
 
 #ifndef PORTABLE_H
@@ -38,7 +38,7 @@ extern "C" {
   #define DLP_PACKED __attribute__ ((packed))
 #else
   #define DLP_PACKED
-#endif  
+#endif
 
   /* Make some guesses about the system libraries based
    * on the architecture.  Currently the assumptions are:
@@ -134,10 +134,10 @@ extern "C" {
 #endif
 
 extern int dlp_sockstartup (void);
-extern int dlp_sockconnect (int sock, struct sockaddr * inetaddr, int addrlen);
-extern int dlp_sockclose (int sock);
-extern int dlp_sockblock (int sock);
-extern int dlp_socknoblock (int sock);
+extern int dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen);
+extern int dlp_sockclose (int socket);
+extern int dlp_sockblock (int socket);
+extern int dlp_socknoblock (int socket);
 extern int dlp_noblockcheck (void);
 extern int dlp_setsocktimeo (int socket, int timeout);
 extern int dlp_setioalarm (int timeout);

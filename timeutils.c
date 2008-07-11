@@ -1,12 +1,12 @@
-/***************************************************************************
- * timeutils.c
+/***********************************************************************//**
+ * @file timeutils.c
  *
- * General time utility routines
+ * General time utility routines and routines for dealing with libdali
+ * time values of dltime_t type.
  *
- * Written by Chad Trabant
- * IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.033
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <stdio.h>
@@ -20,8 +20,8 @@ static dltime_t dl_time2dltime_int (int year, int day, int hour,
 				    int min, int sec, int usec);
 
 
-/***************************************************************************
- * dl_doy2md:
+/***********************************************************************//**
+ * @brief Compute the month and day-of-month from day-of-year
  *
  * Compute the month and day-of-month from a year and day-of-year.
  *
@@ -29,7 +29,12 @@ static dltime_t dl_time2dltime_int (int year, int day, int hour,
  * be in the range 1-366, month will be in the range 1-12 and mday
  * will be in the range 1-31.
  *
- * Returns 0 on success and -1 on error.
+ * @param year Year (1900 - 2100)
+ * @param jday Day-of-year, "Julian" day (1 - 366)
+ * @param month Returned month (1 - 12)
+ * @param mday Returned day-of-month (1 - 31)
+ *
+ * @return 0 on success and -1 on error.
  ***************************************************************************/
 int
 dl_doy2md (int year, int jday, int *month, int *mday)
@@ -74,8 +79,8 @@ dl_doy2md (int year, int jday, int *month, int *mday)
 }  /* End of dl_doy2md() */
 
 
-/***************************************************************************
- * dl_md2doy:
+/***********************************************************************//**
+ * @brief Compute the day-of-year from year, month and day-of-month
  *
  * Compute the day-of-year from a year, month and day-of-month.
  *
@@ -83,7 +88,12 @@ dl_doy2md (int year, int jday, int *month, int *mday)
  * be in the range 1-12, mday is expected to be in the range 1-31 and
  * jday will be in the range 1-366.
  *
- * Returns 0 on success and -1 on error.
+ * @param year Year (1900 - 2100)
+ * @param month Month (1 - 12)
+ * @param mday Day-of-month (1 - 31)
+ * @param jday Returned day-of-year, "Julian" day (1 - 366)
+ *
+ * @return 0 on success and -1 on error.
  ***************************************************************************/
 int
 dl_md2doy (int year, int month, int mday, int *jday)
@@ -142,11 +152,11 @@ dl_md2doy (int year, int month, int mday, int *jday)
 }  /* End of dl_md2doy() */
 
 
-/***************************************************************************
- * dl_dltime2isotimestr:
+/***********************************************************************//**
+ * @brief Generate an ISO time string from a dltime_t
  *
  * Build a time string in ISO recommended format from a high precision
- * epoch time.
+ * epoch time, dltime_t, value.
  *
  * The provided isostimestr must have enough room for the resulting time
  * string of 27 characters, i.e. '2001-07-29T12:38:00.000000' + NULL.
@@ -154,7 +164,11 @@ dl_md2doy (int year, int month, int mday, int *jday)
  * The 'subseconds' flag controls whenther the sub second portion of the
  * time is included or not.
  *
- * Returns a pointer to the resulting string or NULL on error.
+ * @param dltime The dltime_t time value
+ * @param isotimestr Returned ISO time string, must have room for 27 characters
+ * @param subseconds Flag to control the inclusion of subseconds
+ *
+ * @return A pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
 dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds)
@@ -200,8 +214,8 @@ dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds)
 }  /* End of dl_dltime2isotimestr() */
 
 
-/***************************************************************************
- * dl_dltime2mdtimestr:
+/***********************************************************************//**
+ * @brief Generate an time string in month-day format from a dltime_t
  *
  * Build a time string in month-day format from a high precision
  * epoch time.
@@ -212,7 +226,11 @@ dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds)
  * The 'subseconds' flag controls whenther the sub second portion of the
  * time is included or not.
  *
- * Returns a pointer to the resulting string or NULL on error.
+ * @param dltime The dltime_t time value
+ * @param mdtimestr Returned time string, must have room for 27 characters
+ * @param subseconds Flag to control the inclusion of subseconds
+ *
+ * @return A pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
 dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds)
@@ -258,10 +276,10 @@ dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds)
 }  /* End of dl_dltime2mdtimestr() */
 
 
-/***************************************************************************
- * dl_dltime2seedtimestr:
+/***********************************************************************//**
+ * @brief Generate an time string in SEED format from a dltime_t
  *
- * Build a SEED time string from a high precision epoch time.
+ * Build a SEED (day-of-year) time string from a high precision epoch time.
  *
  * The provided seedtimestr must have enough room for the resulting time
  * string of 25 characters, i.e. '2001,195,12:38:00.000000\n'.
@@ -269,7 +287,11 @@ dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds)
  * The 'subseconds' flag controls whenther the sub second portion of the
  * time is included or not.
  *
- * Returns a pointer to the resulting string or NULL on error.
+ * @param dltime The dltime_t time value
+ * @param seedtimestr Returned time string, must have room for 25 characters
+ * @param subseconds Flag to control the inclusion of subseconds
+ *
+ * @return A pointer to the resulting string or NULL on error.
  ***************************************************************************/
 char *
 dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
@@ -317,7 +339,7 @@ dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
 
 
 /***************************************************************************
- * dl_time2dltime_int:
+ * Convert specified time values to a dltime_t value, internal-only
  *
  * Convert specified time values to a high precision epoch time
  * (1/DLTMODULUS second ticks from the epoch).  This is an internal
@@ -325,7 +347,7 @@ dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
  * the range for each value has already been done.  The algorithm used
  * is a specific version of a generalized function in GNU glibc.
  *
- * Returns epoch time on success and DLTERROR on error.
+ * Returns dltime_t time value on success and DLTERROR on error.
  ***************************************************************************/
 static dltime_t
 dl_time2dltime_int (int year, int day, int hour, int min, int sec, int usec)
@@ -352,22 +374,21 @@ dl_time2dltime_int (int year, int day, int hour, int min, int sec, int usec)
 }  /* End of dl_time2dltime_int() */
 
 
-/***************************************************************************
- * dl_time2dltime:
+/***********************************************************************//**
+ * @brief Convert specified time values to a dltime_t value
  *
- * Convert specified time values to a high precision epoch time.  This
- * is essentially a frontend for dl_time2dltime that does range
- * checking for each input value.
+ * Convert specified time values to a high precision epoch time, a
+ * dltime_t value.  The routine will range check all the input
+ * parameters.
  *
- * Expected ranges:
- * year : 1900 - 2100
- * day  : 1 - 366
- * hour : 0 - 23
- * min  : 0 - 59
- * sec  : 0 - 60
- * usec : 0 - 999999
+ * @param year Year (1900 - 2100)
+ * @param day  Day  (1 - 366)
+ * @param hour Hour (0 - 23)
+ * @param min  Minute (0 - 59)
+ * @param sec  Second (0 - 60)
+ * @param usec Microsecond (0 - 999999)
  *
- * Returns epoch time on success and DLTERROR on error.
+ * @return dltime_t time value on success and DLTERROR on error.
  ***************************************************************************/
 dltime_t
 dl_time2dltime (int year, int day, int hour, int min, int sec, int usec)
@@ -412,8 +433,8 @@ dl_time2dltime (int year, int day, int hour, int min, int sec, int usec)
 }  /* End of dl_time2dltime() */
 
 
-/***************************************************************************
- * dl_seedtimestr2dltime:
+/***********************************************************************//**
+ * @brief Convert a SEED time string to a dltime_t value
  * 
  * Convert a SEED time string to a high precision epoch time.  SEED
  * time format is "YYYY[,DDD,HH,MM,SS.FFFFFF]", the delimiter can be a
@@ -425,9 +446,11 @@ dl_time2dltime (int year, int day, int hour, int min, int sec, int usec)
  * be 1): "YYYY,DDD,HH" assumes MM, SS and FFFF are 0.  The year is
  * required, otherwise there wouldn't be much for a date.
  *
- * Ranges are checked for each value.
+ * Ranges are checked for each time value.
  *
- * Returns epoch time on success and DLTERROR on error.
+ * @param seedtimestr SEED time string to convert
+ *
+ * @return dltime_t time value on success and DLTERROR on error.
  ***************************************************************************/
 dltime_t
 dl_seedtimestr2dltime (char *seedtimestr)
@@ -496,8 +519,8 @@ dl_seedtimestr2dltime (char *seedtimestr)
 }  /* End of dl_seedtimestr2dltime() */
 
 
-/***************************************************************************
- * dl_timestr2dltime:
+/***********************************************************************//**
+ * @brief Convert a time string to a dltime_t value
  * 
  * Convert a generic time string to a high precision epoch time.
  * SEED time format is "YYYY[/MM/DD HH:MM:SS.FFFF]", the delimiter can
@@ -510,9 +533,11 @@ dl_seedtimestr2dltime (char *seedtimestr)
  * assumed to be 1): "YYYY/MM/DD" assumes HH, MM, SS and FFFF are 0.
  * The year is required, otherwise there wouldn't be much for a date.
  *
- * Ranges are checked for each value.
+ * Ranges are checked for each time value.
  *
- * Returns epoch time on success and DLTERROR on error.
+ * @param timestr Time string to convert
+ *
+ * @return dltime_t time value on success and DLTERROR on error.
  ***************************************************************************/
 dltime_t
 dl_timestr2dltime (char *timestr)

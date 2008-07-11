@@ -1,9 +1,9 @@
-/***************************************************************************
- * statefile.c:
+/***********************************************************************//**
+ * @file statefile.c:
  *
  * Routines to save and recover DataLink state information to/from a file.
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
  * modified: 2008.040
  ***************************************************************************/
@@ -15,15 +15,17 @@
 #include "libdali.h"
 
 
-/***************************************************************************
- * dl_savestate:
+/***********************************************************************//**
+ * @brief Save a DataLink connection state to a file
  *
  * Save the all the current the sequence numbers and time stamps into the
  * given state file.
  *
- * Returns:
- * -1 : error
- *  0 : completed successfully
+ * @param dlconn DataLink Connection Parameters
+ * @param statefile File to save state to
+ *
+ * @retval -1 Error
+ * @retval 0 Completed successfully
  ***************************************************************************/
 int
 dl_savestate (DLCP *dlconn, const char *statefile)
@@ -64,15 +66,18 @@ dl_savestate (DLCP *dlconn, const char *statefile)
 } /* End of dl_savestate() */
 
 
-/***************************************************************************
- * dl_recoverstate:
+/***********************************************************************//**
+ * @brief Recover DataLink connection state from a file
  *
- * Recover connection state from a state file.
+ * Recover connection state from a state file and set the state
+ * parameters in a given DataLink Connection Paramters.
  *
- * Returns:
- * -1 : error
- *  0 : completed successfully
- *  1 : file could not be opened (probably not found)
+ * @param dlconn DataLink Connection Parameters
+ * @param statefile File to recover state from
+ *
+ * @retval -1 Error
+ * @retval 0 Completed successfully
+ * @retval 1 File could not be opened (probably not found)
  ***************************************************************************/
 int
 dl_recoverstate (DLCP *dlconn, const char *statefile)

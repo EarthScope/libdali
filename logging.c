@@ -1,11 +1,18 @@
-/***************************************************************************
- * logging.c
+/***********************************************************************//**
+ * @file logging.c
  *
- * Log handling routines for libdali
+ * Log handling routines for libdali.
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * These logging routines are used throughout the library and allow
+ * all log, diagnostic and error message output to be redirected or
+ * otherwise fine tuned.
  *
- * modified: 2008.075
+ * The most important routines for general library use are
+ * dl_loginit() and dl_log().
+ *
+ * @author Chad Trabant, IRIS Data Management Center
+ *
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <stdio.h>
@@ -25,8 +32,8 @@ int dl_log_main (DLLog *logp, int level, int verb, va_list *varlist);
 DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
 
 
-/***************************************************************************
- * dl_loginit:
+/***********************************************************************//**
+ * @brief Initialize global logging system parameters
  *
  * Initialize the global logging parameters.
  *
@@ -41,8 +48,8 @@ dl_loginit (int verbosity,
 }  /* End of dl_loginit() */
 
 
-/***************************************************************************
- * dl_loginit_r:
+/***********************************************************************//**
+ * @brief Initialize logging parameters specific to a DLCP
  *
  * Initialize DLCP specific logging parameters.  If the logging parameters
  * have not been initialized (dlconn->log == NULL) new parameter space will
@@ -73,8 +80,8 @@ dl_loginit_r (DLCP *dlconn, int verbosity,
 }  /* End of dl_loginit_r() */
 
 
-/***************************************************************************
- * dl_loginit_rl:
+/***********************************************************************//**
+ * @brief Initialize logging parameters for a specific DLLog
  *
  * Initialize DLLog specific logging parameters.  If the logging parameters
  * have not been initialized (log == NULL) new parameter space will
@@ -82,7 +89,7 @@ dl_loginit_r (DLCP *dlconn, int verbosity,
  *
  * See dl_loginit_main() description for usage.
  *
- * Returns a pointer to the created/re-initialized DLLog struct.
+ * @return A pointer to the created/re-initialized DLLog struct.
  ***************************************************************************/
 DLLog *
 dl_loginit_rl (DLLog *log, int verbosity,
@@ -112,15 +119,15 @@ dl_loginit_rl (DLLog *log, int verbosity,
 }  /* End of dl_loginit_rl() */
 
 
-/***************************************************************************
- * dl_loginit_main:
+/***********************************************************************//**
+ * @brief Initialize the logging system
  *
- * Initialize the logging subsystem.  Given values determine how dl_log()
- * and dl_log_r() emit messages.
+ * Initialize the logging subsystem.  The logging paramters determine
+ * how dl_log() and dl_log_r() emit messages.
  *
  * This function modifies the logging parameters in the passed DLLog.
  *
- * Any log/error printing functions indicated must except a single
+ * Any log/error printing functions indicated must accept a single
  * argument, namely a string (char *).  The dl_log() and dl_log_r()
  * functions format each message and then pass the result on to the
  * log/error printing functions.
@@ -133,6 +140,13 @@ dl_loginit_rl (DLLog *log, int verbosity,
  * of the logging subsystem is given in the example below.
  *
  * Example: dl_loginit_main (0, (void*)&printf, NULL, (void*)&printf, "error: ");
+ *
+ * @param logp The DLLog parameters to change
+ * @param verbosity The verbosity level
+ * @param log_print Pointer to a log message printing function
+ * @param logprefix Prefix to add to each log & diganostic message
+ * @param diag_print Pointer to a diagnostic & error message printing function
+ * @param errprefix Prefix to add to each error message
  ***************************************************************************/
 void
 dl_loginit_main (DLLog *logp, int verbosity,
@@ -178,12 +192,16 @@ dl_loginit_main (DLLog *logp, int verbosity,
 }  /* End of dl_loginit_main() */
 
 
-/***************************************************************************
- * dl_log:
+/***********************************************************************//**
+ * @brief Log a message using the global logging parameters
  *
  * A wrapper to dl_log_main() that uses the global logging parameters.
  *
- * See dl_log_main() description for return values.
+ * @param level Level at which to log the message (1, 2 or 3)
+ * @param verb Verbosity threshold at which to log the message
+ * @param ... Messages format and optional arguments in printf style
+ *
+ * @return See dl_log_main() description for return values.
  ***************************************************************************/
 int
 dl_log (int level, int verb, ...)
@@ -201,14 +219,19 @@ dl_log (int level, int verb, ...)
 }  /* End of dl_log() */
 
 
-/***************************************************************************
- * dl_log_r:
+/***********************************************************************//**
+ * @brief Log a message using the log parameters from a DLCP
  *
  * A wrapper to dl_log_main() that uses the logging parameters in a
  * supplied DLCP. If the supplied pointer is NULL the global logging
  * parameters will be used.
  *
- * See dl_log_main() description for return values.
+ * @param dlconn DataLink Connection Parameters with associated logging paramters
+ * @param level Level at which to log the message (1, 2 or 3)
+ * @param verb Verbosity threshold at which to log the message
+ * @param ... Messages format and optional arguments in printf style
+ *
+ * @return See dl_log_main() description for return values.
  ***************************************************************************/
 int
 dl_log_r (const DLCP *dlconn, int level, int verb, ...)
@@ -234,14 +257,19 @@ dl_log_r (const DLCP *dlconn, int level, int verb, ...)
 }  /* End of dl_log_r() */
 
 
-/***************************************************************************
- * dl_log_rl:
+/***********************************************************************//**
+ * @brief Log a message using the log parameters from a DLCP
  *
  * A wrapper to dl_log_main() that uses the logging parameters in a
  * supplied DLLog.  If the supplied pointer is NULL the global logging
  * parameters will be used.
  *
- * See dl_log_main() description for return values.
+ * @param log DLLog logging paramters
+ * @param level Level at which to log the message (1, 2 or 3)
+ * @param verb Verbosity threshold at which to log the message
+ * @param ... Messages format and optional arguments in printf style
+ *
+ * @return See dl_log_main() description for return values.
  ***************************************************************************/
 int
 dl_log_rl (DLLog *log, int level, int verb, ...)
@@ -265,10 +293,10 @@ dl_log_rl (DLLog *log, int level, int verb, ...)
 }  /* End of dl_log_rl() */
 
 
-/***************************************************************************
- * dl_log_main:
+/***********************************************************************//**
+ * @brief Primary log message processing routine
  *
- * A standard logging/printing routine.
+ * Prinmary logging/printing routine.
  *
  * This routine acts as a central message facility for the all of the
  * libdali functions.
@@ -299,7 +327,12 @@ dl_log_rl (DLLog *log, int level, int verb, ...)
  * All messages will be truncated to the MAX_LOG_MSG_LENGTH, this includes
  * any set prefix.
  *
- * Returns the number of characters formatted on success, and a
+ * @param log DLLog logging paramters
+ * @param level Level at which to log the message (1, 2 or 3)
+ * @param verb Verbosity threshold at which to log the message
+ * @param ... Messages format and optional arguments in printf style
+ *
+ * @return The number of characters formatted on success, and a
  * a negative value on error.
  ***************************************************************************/
 int
