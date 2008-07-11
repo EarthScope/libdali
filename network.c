@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.170
+ * Version: 2008.193
  ***************************************************************************/
 
 #include <stdio.h>
@@ -150,7 +150,7 @@ dl_connect (DLCP *dlconn)
   dlconn->link = sock;
   
   /* Everything should be connected, exchange IDs */
-  if ( dl_getid (dlconn, 1) == -1 )
+  if ( dl_exchangeIDs (dlconn, 1) == -1 )
     {
       dlp_sockclose (sock);
       return -1;

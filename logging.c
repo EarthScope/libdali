@@ -28,7 +28,7 @@ void dl_loginit_main (DLLog *logp, int verbosity,
 
 int dl_log_main (DLLog *logp, int level, int verb, va_list *varlist);
 
-/* Initialize the global logging parameters */
+/** Initial global logging parameters */
 DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
 
 
@@ -199,7 +199,7 @@ dl_loginit_main (DLLog *logp, int verbosity,
  *
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Messages format and optional arguments in printf style
+ * @param ... Message format and optional arguments in printf style
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -229,7 +229,7 @@ dl_log (int level, int verb, ...)
  * @param dlconn DataLink Connection Parameters with associated logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Messages format and optional arguments in printf style
+ * @param ... Message format and optional arguments in printf style
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -267,7 +267,7 @@ dl_log_r (const DLCP *dlconn, int level, int verb, ...)
  * @param log DLLog logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Messages format and optional arguments in printf style
+ * @param ... Message format and optional arguments in printf style
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -327,10 +327,10 @@ dl_log_rl (DLLog *log, int level, int verb, ...)
  * All messages will be truncated to the MAX_LOG_MSG_LENGTH, this includes
  * any set prefix.
  *
- * @param log DLLog logging paramters
+ * @param logp DLLog logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Messages format and optional arguments in printf style
+ * @param varlist Message format and optional arguments in printf style
  *
  * @return The number of characters formatted on success, and a
  * a negative value on error.

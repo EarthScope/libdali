@@ -115,15 +115,16 @@ dl_strparse (const char *string, const char *delim, DLstrlist **list)
 /***********************************************************************//**
  * @brief Copy a string while removing space charaters
  *
- * Copy 'length' characters from 'source' to 'dest' while removing all
- * spaces.  The result is left justified and always null terminated.
- * The source string must have at least 'length' characters and the
- * destination string must have enough room needed for the non-space
- * characters within 'length' and the null terminator.
+ * Copy @a length characters from @a source to @a dest while removing
+ * all spaces.  The result is left justified and always null
+ * terminated.  The source string must have at least @a length
+ * characters and the destination string must have enough room needed
+ * for the non-space characters within @a length and the null
+ * terminator.
  * 
  * @param dest Destination string
  * @param source String to copy
- * @param length Copy up to a maximum of this many characters to @dest
+ * @param length Copy up to a maximum of this many characters to @a dest
  *
  * @return The number of characters (not including the null
  * terminator) in the destination string.

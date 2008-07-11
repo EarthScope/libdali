@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.192
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -22,7 +22,7 @@
  * Allocate, initialze and return a pointer to a new DLCP struct.
  *
  * @param address Address of DataLink server in "host:port" format
- * @param prognam Name of program, usually argv[0]
+ * @param progname Name of program, usually argv[0]
  *
  * @return allocated DLCP struct on success, NULL on error.
  ***************************************************************************/
@@ -92,7 +92,7 @@ dl_freedlcp (DLCP *dlconn)
  * @return -1 on errors, 0 on success.
  ***************************************************************************/
 int
-dl_getid (DLCP *dlconn, int parseresp)
+dl_exchangeIDs (DLCP *dlconn, int parseresp)
 {
   char sendstr[255];		/* Buffer for command strings */
   char respstr[255];		/* Buffer for server response */  
@@ -106,7 +106,7 @@ dl_getid (DLCP *dlconn, int parseresp)
   /* Sanity check that connection is not in streaming mode */
   if ( dlconn->streaming )
     {
-      dl_log_r (dlconn, 1, 1, "[%s] dl_getid(): Connection in streaming mode, cannot continue\n",
+      dl_log_r (dlconn, 1, 1, "[%s] dl_exchangeIDs(): Connection in streaming mode, cannot continue\n",
 		dlconn->addr);
       return -1;
     }
@@ -140,7 +140,7 @@ dl_getid (DLCP *dlconn, int parseresp)
   if ( strncasecmp (respstr, "ID DATALINK", 11) )
     {
       dl_log_r (dlconn, 1, 1,
-                "[%s] dl_getid(): Unrecognized server ID: %11.11s\n",
+                "[%s] dl_exchangeIDs(): Unrecognized server ID: %11.11s\n",
                 dlconn->addr, respstr);
       return -1;
     }
@@ -184,7 +184,7 @@ dl_getid (DLCP *dlconn, int parseresp)
 	      
 	      if ( ret != 1 )
 		dl_log_r (dlconn, 1, 1,
-			  "[%s] dl_getid(): could not parse protocol version from DLPROTO flag: %s\n",
+			  "[%s] dl_exchangeIDs(): could not parse protocol version from DLPROTO flag: %s\n",
 			  dlconn->addr, tptr);
 	    }
 	  
@@ -196,7 +196,7 @@ dl_getid (DLCP *dlconn, int parseresp)
 	      
 	      if ( ret != 1 )
 		dl_log_r (dlconn, 1, 1,
-			  "[%s] dl_getid(): could not parse packet size from PACKETSIZE flag: %s\n",
+			  "[%s] dl_exchangeIDs(): could not parse packet size from PACKETSIZE flag: %s\n",
 			  dlconn->addr, tptr);
 	    }
 	  
@@ -209,7 +209,7 @@ dl_getid (DLCP *dlconn, int parseresp)
     }
   
   return 0;
-}  /* End of dl_getid() */
+}  /* End of dl_exchangeIDs() */
 
 
 /***********************************************************************//**
@@ -426,7 +426,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
  * and dl_collect_nb() requests.
  *
  * @param dlconn DataLink Connection Parameters
- * @param matchpattern Reject regular expression
+ * @param rejectpattern Reject regular expression
  *
  * @return the count of currently rejected streams on success and -1
  * on error.

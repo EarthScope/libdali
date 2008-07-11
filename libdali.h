@@ -29,21 +29,21 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9.7"
-#define LIBDALI_RELEASE "2008.193"
+#define LIBDALI_VERSION "0.9.7"      /**< libdali version */
+#define LIBDALI_RELEASE "2008.193"   /**< libdali release date */
 
-#define MAXPACKETSIZE       16384    /* Maximum packet size for libdali */
-#define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
-#define MAX_LOG_MSG_LENGTH  200      /* Maximum length of log messages */
+#define MAXPACKETSIZE       16384    /**< Maximum packet size for libdali */
+#define MAXREGEXSIZE        16384    /**< Maximum regex pattern size */
+#define MAX_LOG_MSG_LENGTH  200      /**< Maximum length of log messages */
 
-/* Define a maximium stream ID string length */
+/** Maximium stream ID string length */
 #define MAXSTREAMID 60
 
 /* Return values for dl_collect() and dl_collect_nb() */
-#define DLERROR    -1
-#define DLENDED     0
-#define DLPACKET    1
-#define DLNOPACKET  2
+#define DLERROR    -1      /**< Error occurred */
+#define DLENDED     0      /**< Connection terminated */
+#define DLPACKET    1      /**< Packet returned */
+#define DLNOPACKET  2      /**< No packet for non-blocking dl_collect_nb() */
 
 /** High precision time tick interval as 1/modulus seconds *
  * Default modulus of 1000000 defines tick interval as a microsecond */
@@ -110,7 +110,7 @@ typedef struct DLPacket_s
 /* connection.c */
 extern DLCP *  dl_newdlcp (char *address, char *progname);
 extern void    dl_freedlcp (DLCP *dlconn);
-extern int     dl_getid (DLCP *dlconn, int parseresp);
+extern int     dl_exchangeIDs (DLCP *dlconn, int parseresp);
 extern int64_t dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime);
 extern int64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
 extern int64_t dl_match (DLCP *dlconn, char *matchpattern);
@@ -134,7 +134,6 @@ extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 /* network.c */
 extern int     dl_connect (DLCP *dlconn);
 extern void    dl_disconnect (DLCP *dlconn);
-extern int     dl_exchangeID (DLCP *dlconn);
 extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
 extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
 			      void *databuf, size_t datalen,
