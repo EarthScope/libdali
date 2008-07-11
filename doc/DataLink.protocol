@@ -4,43 +4,75 @@ DataLink protocol 1.0
 
 --------------------------  General concepts  ------------------------------
 
-Clients submit commands to servers and the servers respond with either
-status replies or data content.
+DataLink operates to two different modes: query mode and streaming
+mode.  In query mode a client submits commands to a server and the
+server responds with either status replies or data content.  In
+streaming mode a server sends selected data packets to a client as
+they become available on the server with no specific per-packet
+interaction from the client.  A DataLink connection is always in query
+mode by default, switching to streaming mode only when specifically
+requested by the client.
 
 Client commands and server replies are encapsulated in DataLink packet
-structures.  All exchanges are formulated using ASCII characters with
-the exception of a single byte length parameter (preheader) and packet
-data.
+structures.  All command and reply exchanges are formulated using
+ASCII characters with the exception of a single byte length parameter
+(preheader) and packet data.
 
 Various client commands and server responses contain time stamps
 represented as high-precision time values defined as Unix/POSIX epoch
-times in microseconds.
+times in microseconds.  These high-precision time values are
+abbreviated to 'hptime', 'hppkttime' or 'hpdatatime'.
 
 
------------------------   DataLink packet structure  -----------------------
+-----------------------   DataLink packet structure   ----------------------
 
 'preheader' + 'header' [+ 'data']
 
-All data packets include a preheader and header, some exchanges do not
-include a data portion.  The preheader is always a 3 byte sequence,
-the first two bytes are the sequence bytes 'D' and 'L' and the third
-is an unsigned 1-byte integer indicating the size of the header
-portion following the preheader.  The header is a maximum of 255 bytes
-in length.  The header portion is always composed of ASCII characters.
+All DataLink packets include a preheader and header, some exchanges do
+not include a data portion.  The preheader is always a 3 byte
+sequence, the first two bytes are the sequence bytes 'D' and 'L' and
+the third is an unsigned 1-byte integer indicating the size of the
+header portion following the preheader.  The header is a maximum of
+255 bytes in length.  The header portion is always composed of ASCII
+characters.
 
+Each DataLink packet includes the following header information:
+
+- Stream ID :: A string identifying a data stream in W_X_Y_Z/TYPE format
+- Packet ID :: An integer ID, unique within a DataLink server at any given time
+- Packet Time :: Time that a packet was accepted by the DataLink server
+- Data Time :: Time associated with the data in the packet
+- Data Size :: Length of the data section of the packet in bytes
+
+The combination of packet ID and packet time uniquely identify a
+packet, using this combination is necessary as packet IDs will
+eventually be reused.
 
 ---------------------------  Client commands  ------------------------------
 
-Client commands go into the header portion of a DataLink packet,
-optionally there is data associated with the command.
+DataLink client commands go into the header section of a DataLink
+packet with any associated data in the data section.
+
+The server will reply to most client commands 
+
+The command description below includes the commands themselves in
+upper case letters with required arguments in lower case letters
+followed by a short description of the command.
 
 
-ID clientID
-  - Reply is header-only formulated as: "ID DataLink (version) :: DLPROTO:#.#"
+
+ID clientid
+
+  Purpose: Send client identification and receive server identification
+  - Reply is header-only formulated as: "ID DataLink (version) :: <capabilities>"
+
 
 POSITION SET pktid hppkttime
-  - pktid can be "EARLIEST" or "LATEST"
+
+  Purpose: Set the client read position in the server to a specific packet
+  - As special cases pktid can be "EARLIEST" or "LATEST"
   - Reply value is packet ID on success
+
 
 POSITION AFTER hptime
   - Reply value is packet ID on success

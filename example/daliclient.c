@@ -8,7 +8,7 @@
  *
  * Written by Chad Trabant, IRIS Data Management Center
  *
- * modified 2008.072
+ * modified 2008.193
  ***************************************************************************/
 
 #include <stdio.h>
@@ -30,7 +30,6 @@
 #define VERSION LIBDALI_VERSION
 
 static short int verbose   = 0;
-static short int ppackets  = 0;
 static char *statefile     = 0;	    /* State file for saving/restoring state */
 static char *matchpattern  = 0;	    /* Source ID matching expression */
 static char *rejectpattern = 0;	    /* Source ID rejecting expression */
@@ -177,10 +176,6 @@ parameter_proc (int argcount, char **argvec)
 	{
 	  verbose += strspn (&argvec[optind][1], "v");
 	}
-      else if (strcmp (argvec[optind], "-p") == 0)
-	{
-	  ppackets = 1;
-	}
       else if (strcmp (argvec[optind], "-k") == 0)
 	{
 	  keepalive = strtoul (argvec[++optind], NULL, 10);
@@ -239,10 +234,6 @@ parameter_proc (int argcount, char **argvec)
   
   /* Report the program version */
   dl_log (0, 1, "%s version: %s\n", PACKAGE, VERSION);
-    
-  /* If verbosity is 2 or greater print detailed packet information */
-  if ( verbose >= 2 )
-    ppackets = 1;
   
   /* Load the match stream list from a file if the argument starts with '@' */
   if ( matchpattern && *matchpattern == '@' )
