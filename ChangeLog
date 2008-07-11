@@ -1,4 +1,9 @@
-2008.173:
+2008.192: 0.9.7
+	- Modify behavior of dl_read() to consume data from a packet
+	that is too large for the supplied buffer.
+	- Generalize the names of the arguments to dl_splitstreamid().
+
+2008.173: 0.9.6
 	- Add DLCP.writeperm flag and set to true if the server
 	returns the write permission flag in it's capabilities
 	string.

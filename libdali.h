@@ -29,8 +29,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "0.9.6"
-#define LIBDALI_RELEASE "2008.173"
+#define LIBDALI_VERSION "0.9.7"
+#define LIBDALI_RELEASE "2008.192"
 
 #define MAXPACKETSIZE       16384    /* Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /* Maximum regex pattern size */
@@ -152,8 +152,7 @@ extern dltime_t dl_seedtimestr2dltime (char *seedtimestr);
 extern dltime_t dl_timestr2dltime (char *timestr);
 
 /* genutils.c */
-extern int     dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
-				 char *chan, char *type);
+extern int     dl_splitstreamid (char *streamid, char *w, char *x, char *y, char *z, char *type);
 extern int     dl_bigendianhost (void);
 extern double  dl_dabs (double value);
 extern int     dl_readline (int fd, char *buffer, int buflen);

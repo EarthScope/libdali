@@ -1,12 +1,12 @@
-/***************************************************************************
- * config.c:
+/***********************************************************************//**
+ * @file config.c:
  *
- * Routines to assist with the configuration of a DataLink connection
+ * File oriented utility routines to use with a DataLink connection
  * description.
  *
- * Written by Chad Trabant, ORFEUS/EC-Project MEREDIAN
+ * @author Chad Trabant, ORFEUS/EC-Project MEREDIAN
  *
- * modified: 2008.039
+ * modified: 2008.192
  ***************************************************************************/
 
 #include <stdio.h>
@@ -17,13 +17,14 @@
 #include "libdali.h"
 
 
-/***************************************************************************
- * dl_read_streamlist:
+/***********************************************************************//**
+ * @brief Create a compound regular expression from a list in a file
  *
- * Read a list of stream regexes from a file and create a composite
- * regex.  The caller is responsible for free'ing the returned string.
+ * Read a list of stream regular expressions from a file and create a
+ * compound regular expression.  The caller is responsible for
+ * free'ing the returned string.
  *
- * Returns a composite regex on success and NULL on error.
+ * @return A composite regex pattern on success and NULL on error.
  ***************************************************************************/
 char *
 dl_read_streamlist (DLCP *dlconn, const char *streamfile)

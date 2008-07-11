@@ -1,11 +1,11 @@
-/***************************************************************************
- * connection.c
+/***********************************************************************//**
+ * @file connection.c
  *
- * Routines for managing a connection with a DataLink server
+ * Routines for managing a connection with a DataLink server.
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.173
+ * modified: 2008.192
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -16,14 +16,15 @@
 #include "libdali.h"
 #include "portable.h"
 
-/***************************************************************************
- * dl_newdlcp:
+/***********************************************************************//**
+ * @brief Create a new DataLink Connection Parameter (DLCP) structure
  *
- * Allocate, initialze and return a pointer to a new DLCP struct.  The
- * address string should be in "host:port" format and the program name
- * is usually just argv[0].
+ * Allocate, initialze and return a pointer to a new DLCP struct.
  *
- * Returns allocated DLCP struct on success, NULL on error.
+ * @param address Address of DataLink server in "host:port" format
+ * @param prognam Name of program, usually argv[0]
+ *
+ * @return allocated DLCP struct on success, NULL on error.
  ***************************************************************************/
 DLCP *
 dl_newdlcp (char *address, char *progname)
@@ -59,11 +60,12 @@ dl_newdlcp (char *address, char *progname)
 }  /* End of dl_newdlcp() */
 
 
-/***************************************************************************
- * dl_freedlcp:
+/***********************************************************************//**
+ * @brief Free a DataLink Connection Parameter (DLCP) structure
  *
  * Free all memory associated with a DLCP struct.
  *
+ * @param dlconn DLCP to free
  ***************************************************************************/
 void
 dl_freedlcp (DLCP *dlconn)
@@ -75,13 +77,18 @@ dl_freedlcp (DLCP *dlconn)
 }  /* End of dl_freedlcp() */
 
 
-/***************************************************************************
- * dl_getid:
+/***********************************************************************//**
+ * @brief Send the ID command to the DataLink server and parse response
  *
  * Send the ID command including the client ID and optionally parse
- * the capability flags from the server response.
+ * the capability flags from the server response.  This routine is
+ * always called when a connection is first made using dl_connect()
+ * and shouldn't normally need to be called again.
  *
- * Returns -1 on errors, 0 on success.
+ * @param dlconn DataLink Connection Parameters
+ * @param parseresp Flag to control parsing of server response.
+ *
+ * @return -1 on errors, 0 on success.
  ***************************************************************************/
 int
 dl_getid (DLCP *dlconn, int parseresp)
@@ -192,12 +199,20 @@ dl_getid (DLCP *dlconn, int parseresp)
 }  /* End of dl_getid() */
 
 
-/***************************************************************************
- * dl_position:
+/***********************************************************************//**
+ * @brief Position the client read position
  *
- * Position client read position based on a packet ID and packet time.
+ * Set the client read position to a specified packet ID and packet
+ * time.  A packet ID and time together uniquely identify a packet in
+ * a DataLink server.  The packet time must match the packet ID
+ * current in the server's buffer or the positioning request will
+ * fail.
  *
- * Returns a positive packet ID on success and -1 on error.
+ * @param dlconn DataLink Connection Parameters
+ * @param pktid Packet ID to set position to
+ * @param pkttime Packet time cooresponding to @a pktid
+ *
+ * @return A positive packet ID on success and -1 on error.
  ***************************************************************************/
 int64_t
 dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
@@ -252,12 +267,18 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
 }  /* End of dl_position() */
 
 
-/***************************************************************************
- * dl_position_after:
+/***********************************************************************//**
+ * @brief Position the client read position based on data time
  *
- * Position client read position based on a packet data time.
+ * Set the client read position to the first packet with a data time
+ * after a reference @a datatime.  The reference time must be
+ * specified as a dltime_t value, see dl_time2dltime() and friends to
+ * generate these time values.
  *
- * Returns a positive packet ID on success and -1 on error.
+ * @param dlconn DataLink Connection Parameters
+ * @param datatime Reference data time as a dltime_t value
+ *
+ * @return A positive packet ID on success and -1 on error.
  ***************************************************************************/
 int64_t
 dl_position_after (DLCP *dlconn, dltime_t datatime)
@@ -309,14 +330,21 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
 }  /* End of dl_position_after() */
 
 
-/***************************************************************************
- * dl_match:
+/***********************************************************************//**
+ * @brief Set the packet match parameters for a connection
  *
- * Send new match pattern to server or reset matching.  If the
+ * Send new match pattern to server or reset matching.  If @a
  * matchpattern is NULL a zero length pattern command is sent to the
- * server which resets the client matchion setting.
+ * server which resets the client matching setting.
  *
- * Returns the count of currently matched streams on success and -1
+ * The packet match pattern limits which packets are sent to the
+ * client in streaming mode, this is the mode used for dl_collect()
+ * and dl_collect_nb() requests.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param matchpattern Match regular expression
+ *
+ * @return the count of currently matched streams on success and -1
  * on error.
  ***************************************************************************/
 int64_t
@@ -373,14 +401,21 @@ dl_match (DLCP *dlconn, char *matchpattern)
 }  /* End of dl_match() */
 
 
-/***************************************************************************
- * dl_reject:
+/***********************************************************************//**
+ * @brief Set the packet reject parameters for a connection
  *
- * Send new reject pattern to server or reset rejecting.  If the
+ * Send new reject pattern to server or reset rejecting.  If @a
  * rejectpattern is NULL a zero length pattern command is sent to the
- * server which resets the client rejection setting.
+ * server which resets the client rejecting setting.
  *
- * Returns the count of currently rejected streams on success and -1
+ * The packet reject pattern limits which packets are sent to the
+ * client in streaming mode, this is the mode used for dl_collect()
+ * and dl_collect_nb() requests.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param matchpattern Reject regular expression
+ *
+ * @return the count of currently rejected streams on success and -1
  * on error.
  ***************************************************************************/
 int64_t
@@ -437,13 +472,26 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
 }  /* End of dl_reject() */
 
 
-/***************************************************************************
- * dl_write:
+/***********************************************************************//**
+ * @brief Send a packet to the DataLink server
  *
  * Send a packet to the server and optionally request and process an
- * acknowledgement from the server.
+ * acknowledgement from the server.  An appropriate DataLink packet
+ * header is created from the supplied parameters and sent with the
+ * packet data.
  *
- * Returns -1 on error and 0 on success when no acknowledgement is
+ * When an acknowledgement from the server has been requested this
+ * routine will receive the response from the server and parse it, a
+ * successful acknowledgement is indicated by the return value.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param packet Packet data buffer to send
+ * @param packetlen Length of data in bytes to send from @a packet
+ * @param streamid Stream ID of packet
+ * @param datatime Data time for packet
+ * @param ack Acknowledgement flag, if true request acknowledgement
+ *
+ * @return -1 on error and 0 on success when no acknowledgement is
  * requested and a positive packet ID on success when acknowledgement
  * is requested.
  ***************************************************************************/
@@ -505,13 +553,27 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
 }  /* End of dl_write() */
 
 
-/***************************************************************************
- * dl_read:
+/***********************************************************************//**
+ * @brief Request a packet from the DataLink server
  *
- * Receive a packet (header and data) optionally requesting a specific
- * packet if pktid > 0.
+ * Request a specific packet from the server.
  *
- * Returns 0 on success and -1 on error.
+ * A maximum of @a maxdatasize will be written to @a packetdata.  If
+ * the packet data is larger than this maximum size an error will be
+ * logged and 0 will be returned; the packet data will be recv'd and
+ * discarded in order to leave the connection in a usable state.
+ *
+ * If this routine returns -1 the connection should be considered to
+ * be in a bad state and should be shut down.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param pktid Packet ID to request
+ * @param packet Pointer to a DLPacket struct for the received packet header information
+ * @param packetdata Pointer to a buffer for received packet data
+ * @param maxdatasize Maximum data size to write to @a packetdata
+ *
+ * @return Number of bytes of packet data received on success and -1
+ * on error.
  ***************************************************************************/
 int
 dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
@@ -574,12 +636,38 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 	  return -1;
 	}
       
+      /* Check that the packet data size is not beyond the max receive buffer size */
       if ( packet->datasize > maxdatasize )
 	{
+	  char *discard;
+	  
 	  dl_log_r (dlconn, 2, 0,
 		    "[%s] dl_read(): packet data larger (%ld) than receiving buffer (%ld)\n",
 		    dlconn->addr, packet->datasize, maxdatasize);
-	  return -1;
+	  
+	  /* Allocate temporary buffer */
+	  if ( ! (discard = (char *) malloc (packet->datasize)) )
+	    {
+	      dl_log_r (dlconn, 2, 0,
+			"[%s] dl_read(): cannot allocate %d bytes for temporary buffer\n",
+			dlconn->addr, packet->datasize);
+	      return -1;
+	    }
+
+	  /* Consume packet data */
+	  if ( (rv = dl_recvdata (dlconn, discard, packet->datasize, 1)) != packet->datasize )
+	    {
+	      /* Only log an error if the connection was not shut down */
+	      if ( rv < -1 )
+		dl_log_r (dlconn, 2, 0, "[%s] dl_read(): problem receiving packet data\n",
+			  dlconn->addr);
+	      return -1;
+	    }
+	  
+	  if ( discard )
+	    free (discard);
+	  
+	  return 0;
 	}
       
       /* Receive packet data, blocking until complete */
@@ -614,21 +702,31 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
       return -1;
     }
   
-  return 0;
+  return packet->datasize;
 }  /* End of dl_read() */
 
 
-/***************************************************************************
- * dl_getinfo:
+/***********************************************************************//**
+ * @brief Request information from the DataLink server
  *
- * Request and receive information from the server using the INFO
- * command.  If the maxinfosize argument is 0 memory will be allocated
- * as needed for the INFO data result and the infodata pointer will be
- * set to this new buffer; it is up to the caller to free this memory.
- * If an infomatch string is supplied it will be appended to the INFO
+ * Request and receive information from the server using the DataLink
+ * INFO command.  The INFO response is placed in the supplied @a
+ * infodata buffer.  All DataLink INFO responses are returned as XML.
+ *
+ * If @a maxinfosize argument is 0 memory will be allocated as needed
+ * for the INFO data result and the infodata pointer will be set to
+ * this new buffer; it is up to the caller to free this memory.  If an
+ * infomatch string is supplied it will be appended to the INFO
  * request sent to the server.
  *
- * Returns the lengh of the INFO response on success and -1 on error.
+ * @param dlconn DataLink Connection Parameters
+ * @param infotype The INFO type to request
+ * @param infomatch An optional match pattern
+ * @param infodata Buffer to place the INFO response into
+ * @param maxinfosize Maximum number of bytes to write to @a infodata buffer
+ *
+ * @return The length of the INFO response in bytes on success and -1
+ * on error.
  ***************************************************************************/
 int
 dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
@@ -750,22 +848,30 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
 }  /* End of dl_getinfo() */
 
 
-/***************************************************************************
- * dl_collect:
+/***********************************************************************//**
+ * @brief Collect packets streaming from the DataLink server
  *
- * Send the STREAM command and collect packets sent by the server.
- * Keep alive packets are sent to the server based on the
- * DLCP.keepalive parameter.  If the endflag is true send the
- * ENDSTREAM command.
+ * Collect packets streaming from the DataLink server.  If the
+ * connection is not already in streaming mode the STREAM command will
+ * first be sent.  This routine will block until a packet is received
+ * sending keepalive packets to the server based on the DLCP.keepalive
+ * parameter.
  *
  * Designed to run in a tight loop at the heart of a client program,
  * this function will return every time a packet is received.  On
- * successfully receiving a packet dlpack will be populated and the
- * packet body will be copied into packet buffer.
+ * successfully receiving a packet @a dlpack will be populated and the
+ * packet data will be copied into @a packetdata.
  *
- * Returns DLPACKET when a packet is received.  Returns DLENDED when
- * the stream ending sequence was completed or the connection was
- * shut down.  Returns DLERROR when an error occurred.
+ * If the endflag is true the ENDSTREAM command is sent which
+ * instructs the server to stop streaming packets; a client must
+ * continue collecting packets until DLENDED is returned in order to
+ * get any packets that were in-the-air when ENDSTREAM was requested.
+ * The stream ending sequence must be completed if the connection is
+ * to be used after streaming mode.
+ *
+ * @retval DLPACKET when a packet is received.
+ * @retval DLENDED when the stream ending sequence was completed or the connection was shut down.
+ * @retval DLERROR when an error occurred.
  ***************************************************************************/
 int
 dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
@@ -969,23 +1075,32 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 }  /* End of dl_collect() */
 
 
-/***************************************************************************
- * dl_collect_nb:
+/***********************************************************************//**
+ * @brief Collect packets streaming from the DataLink server without blocking
  *
- * Send the STREAM command and collect packets sent by the server.
- * Keep alive packets are sent to the server based on the
- * DLCP.keepalive parameter.  If the endflag is true send the
- * ENDSTREAM command.
+ * Collect packets streaming from the DataLink server.  If the
+ * connection is not already in streaming mode the STREAM command will
+ * first be sent.  This routine is a non-blocking version of
+ * dl_collect() and will return quickly whether data is received or
+ * not.  Keep alive packets are sent to the server based on the
+ * DLCP.keepalive parameter.
  *
  * Designed to run in a tight loop at the heart of a client program,
- * this function is a non-blocking version of dl_collect().  On
- * successfully receiving a packet dlpack will be populated and the
- * packet body will be copied into packet buffer.
+ * this function will return every time a packet is received.  On
+ * successfully receiving a packet @a dlpack will be populated and the
+ * packet data will be copied into @a packetdata.
  *
- * Returns DLPACKET when a packet is received and DLNOPACKET when no
- * packet is received.  Returns DLENDED when the stream ending
- * sequence was completed or the connection was shut down.  Returns
- * DLERROR when an error occurred.
+ * If the @a endflag is true the ENDSTREAM command is sent which
+ * instructs the server to stop streaming packets; a client must
+ * continue collecting packets until DLENDED is returned in order to
+ * get any packets that were in-the-air when ENDSTREAM was requested.
+ * The stream ending sequence must be completed if the connection is
+ * to be used after streaming mode.
+ *
+ * @retval DLPACKET A packet is received.
+ * @retval DLNOPACKET No packet is received.
+ * @retval DLENDED when the stream ending sequence was completed or the connection was shut down.
+ * @retval DLERROR when an error occurred.
  ***************************************************************************/
 int
 dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
@@ -1159,22 +1274,24 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 }  /* End of dl_collect_nb() */
 
 
-/***************************************************************************
- * dl_handlereply:
+/***********************************************************************//**
+ * @brief Handle the server reply to a command
  *
- * Handle a server reply to a command.  Server replies are of the form:
+ * Handle the server reply to a command.  This routine is used by
+ * other library routines to process replies from the server.
+ *
+ * Server replies are of the form:
  *
  * "OK|ERROR value size"
  *
  * followed by an optional server message of size bytes.  If size is
  * greater than zero it will be read from the connection and placed
- * into buffer.  The server message, if included, will always be a
+ * into @a buffer.  The server message, if included, will always be a
  * NULL-terminated string.
  *
- * Return values:
- * -1 = error
- *  0 = "OK" received
- *  1 = "ERROR" received
+ * @retval -1 Error
+ * @retval 0 "OK" received
+ * @retval 1 "ERROR" received
  ***************************************************************************/
 int
 dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
@@ -1255,10 +1372,14 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
 }  /* End of dl_handlereply() */
 
 
-/***************************************************************************
- * dl_terminate:
+/***********************************************************************//**
+ * @brief Set the terminate parameter of a DataLink connection
  *
- * Set the terminate flag in the DLCP.
+ * Set the terminate parameter/flag in the @a DLCP and log a
+ * diagnostic message indicating that the connection is terminating.
+ * Some of the library routines watch the terminate parameter as an
+ * indication that the client program is requesting a shut down.  This
+ * routine is typically used in a signal handler.
  ***************************************************************************/
 void
 dl_terminate (DLCP *dlconn)

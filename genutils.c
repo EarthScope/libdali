@@ -1,11 +1,11 @@
-/***************************************************************************
- * genutils.c
+/***********************************************************************//**
+ * @file genutils.c
  *
  * General utility functions.
  *
- * Written by Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.034
+ * Version: 2008.192
  ***************************************************************************/
 
 #include <stdio.h>
@@ -14,18 +14,24 @@
 
 #include "libdali.h"
 
-/***************************************************************************
- * dl_splitstreamid:
+/***********************************************************************//**
+ * @brief Split a stream ID into separate components: "W_X_Y_Z/TYPE"
  *
- * Split stream ID into separate components: "NET_STA_LOC_CHAN/TYPE".
- * Memory for each component must already be allocated.  If a specific
- * component is not desired set the appropriate argument to NULL.
+ * Split stream ID into separate components from the composite form:
+ * "W_X_Y_Z/TYPE" where the underscores and slash separate the
+ * components.  Memory for each component must already be allocated.
+ * If a specific component is not desired set the appropriate argument
+ * to NULL.
  *
- * Returns 0 on success and -1 on error.
+ * While the stream name components are completely generic the
+ * (strongly) suggested form for geophysical data is
+ * "NET_STA_LOC_CHAN/TYPE" where NETwork, STAtion, LOCation and
+ * CHANnel follow the FDSN SEED conventions.
+ *
+ * @return 0 on success and -1 on error.
  ***************************************************************************/
 int
-dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
-		  char *chan, char *type)
+dl_splitstreamid (char *streamid, char *w, char *x, char *y, char *z, char *type)
 {
   char *id;
   char *ptr, *top, *next;
@@ -47,43 +53,44 @@ dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
         strcpy (type, ptr);
     }
   
-  /* Network */
+  /* W */
   top = id;
   if ( (ptr = strchr (top, '_')) )
     {
       next = ptr + 1;
       *ptr = '\0';
       
-      if ( net )
-        strcpy (net, top);
+      if ( w )
+        strcpy (w, top);
       
       top = next;
     }
-  /* Station */
+  /* X */
   if ( (ptr = strchr (top, '_')) )
     {
       next = ptr + 1;
       *ptr = '\0';
-      if ( sta )
-        strcpy (sta, top);
+
+      if ( x )
+        strcpy (x, top);
       
       top = next;
     }
-  /* Location */
+  /* Y */
   if ( (ptr = strchr (top, '_')) )
     {
       next = ptr + 1;
       *ptr = '\0';
       
-      if ( loc )
-        strcpy (loc, top);
+      if ( y )
+        strcpy (y, top);
       
       top = next;
     }
-  /* Channel */
-  if ( *top && chan )
+  /* Z */
+  if ( *top && z )
     {
-      strcpy (chan, top);
+      strcpy (z, top);
     }
   
   /* Free duplicated stream ID */
@@ -94,15 +101,15 @@ dl_splitstreamid (char *streamid, char *net, char *sta, char *loc,
 }  /* End of dl_splitstreamid() */
 
 
-/***************************************************************************
- * dl_bigendianhost:
+/***********************************************************************//**
+ * @brief Determine byte order of host machine
  *
  * Determine the byte order of the host machine.  Due to the lack of
  * portable defines to determine host byte order this run-time test is
- * provided.  The code below actually tests for little-endianess, the
- * only other alternative is assumed to be big endian.
+ * provided.  The code actually tests for little-endianess, the only
+ * other alternative is assumed to be big endian.
  * 
- * Returns 0 if the host is little endian, otherwise 1.
+ * @return 0 if the host is little endian, otherwise 1.
  ***************************************************************************/
 int
 dl_bigendianhost ()
@@ -112,14 +119,14 @@ dl_bigendianhost ()
 }  /* End of dl_bigendianhost() */
 
 
-/***************************************************************************
- * dl_dabs:
+/***********************************************************************//**
+ * @brief Return absolute value of double value
  *
  * Determine the absolute value of an input double, actually just test
  * if the input double is positive multiplying by -1.0 if not and
  * return it.
  * 
- * Returns the positive value of input double.
+ * @return Positive value of input double.
  ***************************************************************************/
 double
 dl_dabs (double value)
@@ -130,8 +137,8 @@ dl_dabs (double value)
 }  /* End of dl_dabs() */
 
 
-/***************************************************************************
- * dl_readline:
+/***********************************************************************//**
+ * @brief Read a line from a file stream
  *
  * Read characters from a stream (specified as a file descriptor)
  * until a newline character '\n' is read and place them into the
@@ -139,7 +146,7 @@ dl_dabs (double value)
  * read or buflen-1 characters have been read.  The buffer will always
  * contain a NULL-terminated string.
  *
- * Returns the number of characters read on success and -1 on error.
+ * @return The number of characters read on success and -1 on error.
  ***************************************************************************/
 int
 dl_readline (int fd, char *buffer, int buflen)
