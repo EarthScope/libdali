@@ -28,6 +28,9 @@ abbreviated to 'hptime', 'hppkttime' or 'hpdatatime'.
 
 'preheader' + 'header' [+ 'data']
 
+Vertical bars are used to separate the DataLink packet sections in
+this documentation, they are not included in the packets.
+
 All DataLink packets include a preheader and header, some exchanges do
 not include a data portion.  The preheader is always a 3 byte
 sequence, the first two bytes are the sequence bytes 'D' and 'L' and
