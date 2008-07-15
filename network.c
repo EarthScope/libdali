@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.193
+ * Version: 2008.196
  ***************************************************************************/
 
 #include <stdio.h>
@@ -111,15 +111,7 @@ dl_connect (DLCP *dlconn)
     {
       int timeout = (dlconn->iotimeout > 0) ? dlconn->iotimeout : - dlconn->iotimeout;
       
-      int rv = dlp_setsocktimeo (sock, timeout);
-      
-      if ( rv == -1 )
-	{
-	  dl_log_r (dlconn, 2, 0, "[%s] cannot set socket timeout\n", dlconn->addr);
-	  dlp_sockclose (sock);
-	  return -1;
-	}
-      else if ( rv == 1 )
+      if ( dlp_setsocktimeo (sock, timeout) == 1 )
 	{
 	  dl_log_r (dlconn, 1, 2, "[%s] using system socket timeouts\n", dlconn->addr);
 	  

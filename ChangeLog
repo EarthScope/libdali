@@ -1,4 +1,7 @@
-2008.193: 1.0
+2008.196: 1.0
+	- Do not fail if setsockopt() failed to set socket timeouts.
+
+2008.193: 0.9.7
 	- Modify behavior of dl_read() to consume data from a packet
 	that is too large for the supplied buffer.
 	- Generalize the names of the arguments to dl_splitstreamid().
