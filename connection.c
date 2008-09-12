@@ -651,7 +651,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 		   packet->streamid, &(packet->pktid), &(packet->pkttime),
 		   &(packet->datastart), &(packet->dataend), &(packet->datasize));
       
-      if ( rv != 5 )
+      if ( rv != 6 )
 	{
 	  dl_log_r (dlconn, 2, 0, "[%s] dl_read(): cannot parse PACKET header\n",
 		    dlconn->addr);
