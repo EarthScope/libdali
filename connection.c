@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.256
+ * modified: 2008.284
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -565,10 +565,19 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
       rv = dl_handlereply (dlconn, reply, sizeof(reply), &replyvalue);
       
       /* Log server reply message */
-      if ( rv >= 0 )
-	dl_log_r (dlconn, 1, 3, "[%s] %s\n", dlconn->addr, reply);
+      if ( rv == 0 )
+	{
+	  dl_log_r (dlconn, 1, 3, "[%s] %s\n", dlconn->addr, reply);
+	}
+      else if ( rv == 1 )
+	{
+	  dl_log_r (dlconn, 1, 0, "[%s] %s\n", dlconn->addr, reply);
+	  replyvalue = -1;
+	}
       else
-	replyvalue = -1;
+	{
+	  replyvalue = -1;
+	}
     }
   
   return replyvalue;
