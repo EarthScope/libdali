@@ -17,7 +17,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.324
+ * modified: 2008.193
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -199,50 +199,6 @@ dlp_noblockcheck (void)
   /* no data available for NONBLOCKing IO */
   return 0;
 }  /* End of dlp_noblockcheck() */
-
-
-/***********************************************************************//**
- * @brief Set TCP socket no delay option
- *
- * Set TCP socket no delay option if such an option exists.  On Win32 and
- * other platforms where SO_RCVTIMEO and SO_SNDTIMEO are defined this
- * sets the SO_RCVTIMEO and SO_SNDTIMEO socket options using
- * setsockopt() to the @a timeout value (specified in seconds).
- *
- * @param socket Network socket descriptor
- *
- * @return -1 on error, 0 when not possible and 1 on success.
- ***************************************************************************/
-int
-dlp_setsocknodelay (int socket)
-{
-#if defined(DLP_WIN32)
-  int one = 1;
-  
-  if ( setsockopt (socket, IPPROTO_TCP, TCP_NODELAY, (char*)&one, sizeof(one)) )
-    {
-      return -1;
-    }
-  
-#else
-  struct timeval tval;
-  
-  tval.tv_sec = timeout;
-  tval.tv_usec = 0;
-  
-  if ( setsockopt (socket, SOL_SOCKET, SO_RCVTIMEO, &tval, sizeof (tval)) )
-    {
-      return -1;
-    }
-  if ( setsockopt (socket, SOL_SOCKET, SO_SNDTIMEO, &tval, sizeof (tval)) )
-    {
-      return -1;
-    }
-  
-#endif
-  
-  return 1;
-}  /* End of dlp_setsocknodelay() */
 
 
 /***********************************************************************//**
