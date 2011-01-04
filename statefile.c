@@ -47,8 +47,9 @@ dl_savestate (DLCP *dlconn, const char *statefile)
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
   
   /* Write state information: <server address> <packet ID> <packet time> */
-  linelen = snprintf (line, sizeof(line), "%s %"PRId64" %"PRId64"\n",
-		      dlconn->addr, dlconn->pktid, dlconn->pkttime);
+  linelen = snprintf (line, sizeof(line), "%s %lld %lld\n",
+		      (long long int)dlconn->addr, (long long int)dlconn->pktid,
+		      dlconn->pkttime);
   
   if ( write (statefd, line, linelen) != linelen )
     {

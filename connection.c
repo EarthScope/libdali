@@ -1,4 +1,4 @@
- /***********************************************************************//**
+/***********************************************************************//**
  * @file connection.c
  *
  * Routines for managing a connection with a DataLink server.
@@ -273,8 +273,8 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
   else 
     {
       /* Create packet header with command: "POSITION SET pktid pkttime" */
-      headerlen = snprintf (header, sizeof(header), "POSITION SET %"PRId64" %"PRId64,
-			    pktid, pkttime);
+      headerlen = snprintf (header, sizeof(header), "POSITION SET %lld %lld",
+			    (long long int)pktid, (long long int)pkttime);
     }
   
   /* Send command to server */
@@ -337,8 +337,8 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
     }
   
   /* Create packet header with command: "POSITION AFTER datatime" */
-  headerlen = snprintf (header, sizeof(header), "POSITION AFTER %"PRId64,
-			datatime);
+  headerlen = snprintf (header, sizeof(header), "POSITION AFTER %lld",
+			(long long int)datatime);
   
   /* Send command to server */
   replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
@@ -570,8 +570,9 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   
   /* Create packet header with command: "WRITE streamid hpdatastart hpdataend flags size" */
   headerlen = snprintf (header, sizeof(header),
-			"WRITE %s %"PRId64" %"PRId64" %s %d",
-			streamid, datastart, dataend, flags, packetlen);
+			"WRITE %s %lld %lld %s %d",
+			streamid, (long long int)datastart, (long long int)dataend,
+			flags, packetlen);
   
   /* Send command and packet to server */
   replylen = dl_sendpacket (dlconn, header, headerlen,
@@ -639,6 +640,12 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   int headerlen;
   int rv = 0;
   
+  long long int spktid;
+  long long int spkttime;
+  long long int sdatastart;
+  long long int sdataend;
+  long long int sdatasize;
+  
   if ( ! dlconn || ! packet || ! packetdata )
     return -1;
   
@@ -657,7 +664,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( pktid > 0 )
     {
       /* Create packet header with command: "READ pktid" */
-      headerlen = snprintf (header, sizeof(header), "READ %"PRId64, pktid);
+      headerlen = snprintf (header, sizeof(header), "READ %lld", (long long int)pktid);
       
       /* Send command and packet to server */
       if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
@@ -681,9 +688,9 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( ! strncmp (header, "PACKET", 6) )
     {
       /* Parse PACKET header */
-      rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
-		   packet->streamid, &(packet->pktid), &(packet->pkttime),
-		   &(packet->datastart), &(packet->dataend), &(packet->datasize));
+      rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lldd",
+		   packet->streamid, &spktid, &spkttime,
+		   &sdatastart, &sdataend, &sdatasize);
       
       if ( rv != 6 )
 	{
@@ -691,6 +698,12 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
 		    dlconn->addr);
 	  return -1;
 	}
+      
+      packet->pktid = spktid;
+      packet->pkttime = spkttime;
+      packet->datastart = sdatastart;
+      packet->dataend = sdataend;
+      packet->datasize = sdatasize;
       
       /* Check that the packet data size is not beyond the max receive buffer size */
       if ( packet->datasize > maxdatasize )
@@ -937,6 +950,12 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
   char header[255];
   int  headerlen;
   int  rv;
+
+  long long int spktid;
+  long long int spkttime;
+  long long int sdatastart;
+  long long int sdataend;
+  long long int sdatasize;
   
   /* For select()ing during the read loop */
   struct timeval select_tv;
@@ -1046,9 +1065,9 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	      if ( ! strncmp (header, "PACKET", 6) )
 		{
 		  /* Parse PACKET header */
-		  rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
-			       packet->streamid, &(packet->pktid), &(packet->pkttime),
-			       &(packet->datastart), &(packet->dataend), &(packet->datasize));
+		  rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lld",
+			       packet->streamid, &spktid, &spkttime,
+			       &sdatastart, &sdataend, &sdatasize);
 		  
 		  if ( rv != 6 )
 		    {
@@ -1056,6 +1075,12 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 				dlconn->addr);
 		      return DLERROR;
 		    }
+		  
+		  packet->pktid = spktid;
+		  packet->pkttime = spkttime;
+		  packet->datastart = sdatastart;
+		  packet->dataend = sdataend;
+		  packet->datasize = sdatasize;
 		  
 		  if ( packet->datasize > maxdatasize )
 		    {

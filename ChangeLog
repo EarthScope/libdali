@@ -3,11 +3,10 @@
 	or latest packet, thanks to Doug Neuhauser for the patch.
 	- Updates in connection.c from Doug Neuhauser for invalid socket
 	descriptor handling.
-	- Use PRId64 and SCNd64 macros defined in C99 for correct printing
-	and scanning of 64-bit integers, fixes type warnings on 64-bit build.
 	- Add internal dl_gmtime_r() to avoid the not thread-safe call to
 	the system gmtime().  The internal version handles dates beyond year
 	2038 and is 64-bit friendly.
+	- Rework/casting of printing/scanning for clean 64-bit build.
 
 2008.284: 1.2
 	- Change dl_write() to return an error -1 when the server
