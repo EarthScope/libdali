@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.284
+ * modified: 2011.003
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -240,7 +240,7 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
   if ( ! dlconn )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   if ( pktid < 0 )
@@ -306,7 +306,7 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
   if ( ! dlconn )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */
@@ -374,7 +374,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
   if ( ! dlconn )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */
@@ -445,7 +445,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   if ( ! dlconn )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */
@@ -522,10 +522,17 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   int rv;
   
   if ( ! dlconn || ! packet || ! streamid )
-    return -1;
+    {
+      dl_log_r (dlconn, 1, 1, "dl_write(): dlconn || packet || streamid is not anticipated value \n");
+      return -1;
+    }
   
-  if ( dlconn->link <= 0 )
-    return -1;
+  if ( dlconn->link < 0 )
+    {
+      dl_log_r (dlconn, 1, 1, "[%s] dl_write(): Not connected to server, dlconn->link = %d\n",
+		dlconn->addr, dlconn->link);
+      return -1;
+    }
   
   /* Sanity check that connection is not in streaming mode */
   if ( dlconn->streaming )
@@ -617,7 +624,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( ! dlconn || ! packet || ! packetdata )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */
@@ -775,7 +782,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
   if ( maxinfosize && ! *infodata )
     return -1;
   
-  if ( dlconn->link <= 0 )
+  if ( dlconn->link < 0 )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */

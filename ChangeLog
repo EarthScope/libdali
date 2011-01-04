@@ -1,3 +1,7 @@
+2011.003:
+	- Updates in connection.c from Doug Neuhauser for invalid
+	socket descriptor handling.
+
 2008.284: 1.2
 	- Change dl_write() to return an error -1 when the server 
 	acknowledgement indicates there was an error.  Also print 
