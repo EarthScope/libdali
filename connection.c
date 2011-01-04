@@ -1192,6 +1192,12 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
   int  headerlen;
   int  rv;
   
+  long long int spktid;
+  long long int spkttime;
+  long long int sdatastart;
+  long long int sdataend;
+  long long int sdatasize;
+
   if ( ! dlconn || ! packet || ! packetdata )
     return DLERROR;
   
@@ -1279,9 +1285,9 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       if ( ! strncmp (header, "PACKET", 6) )
 	{
 	  /* Parse PACKET header */
-	  rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
-		       packet->streamid, &(packet->pktid), &(packet->pkttime),
-		       &(packet->datastart), &(packet->dataend), &(packet->datasize));
+	  rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lld",
+		       packet->streamid, &spktid, &spkttime,
+		       &sdatastart, &sdataend, &sdatasize);
 	  
 	  if ( rv != 6 )
 	    {
@@ -1289,6 +1295,12 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 			dlconn->addr);
 	      return DLERROR;
 	    }
+	  
+	  packet->pktid = spktid;
+	  packet->pkttime = spkttime;
+	  packet->datastart = sdatastart;
+	  packet->dataend = sdataend;
+	  packet->datasize = sdatasize;
 	  
 	  if ( packet->datasize > maxdatasize )
 	    {
