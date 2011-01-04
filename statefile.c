@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.040
+ * modified: 2011.003
  ***************************************************************************/
 
 #include <stdio.h>
@@ -47,7 +47,7 @@ dl_savestate (DLCP *dlconn, const char *statefile)
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
   
   /* Write state information: <server address> <packet ID> <packet time> */
-  linelen = snprintf (line, sizeof(line), "%s %lld %lld\n",
+  linelen = snprintf (line, sizeof(line), "%s %"PRId64" %"PRId64"\n",
 		      dlconn->addr, dlconn->pktid, dlconn->pkttime);
   
   if ( write (statefd, line, linelen) != linelen )
@@ -116,7 +116,7 @@ dl_recoverstate (DLCP *dlconn, const char *statefile)
     {
       addrstr[0] = '\0';
       
-      fields = sscanf (line, "%s %lld %lld\n", addrstr, &pktid, &pkttime);
+      fields = sscanf (line, "%s %"SCNd64" %"SCNd64"\n", addrstr, &pktid, &pkttime);
       
       if ( fields < 0 )
         continue;

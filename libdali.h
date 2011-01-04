@@ -36,9 +36,8 @@ extern "C" {
 #define MAXREGEXSIZE        16384    /**< Maximum regex pattern size */
 #define MAX_LOG_MSG_LENGTH  200      /**< Maximum length of log messages */
 
-/** Definitions for explicit positioning to first and last packet in ring */
-#define LIBDALI_POSITION_EARLIEST -2
-#define LIBDALI_POSITION_LATEST   -3
+#define LIBDALI_POSITION_EARLIEST -2 /**< Earliest position in the buffer */
+#define LIBDALI_POSITION_LATEST   -3 /**< Latest position in the buffer */
 
 /** Maximium stream ID string length */
 #define MAXSTREAMID 60

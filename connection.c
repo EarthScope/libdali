@@ -218,8 +218,13 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
  * Set the client read position to a specified packet ID and packet
  * time.  A packet ID and time together uniquely identify a packet in
  * a DataLink server.  The packet time must match the packet ID
- * current in the server's buffer or the positioning request will
+ * currently in the server's buffer or the positioning request will
  * fail.
+ *
+ * As a special case @a pktid maybe be set to @a LIBDALI_POSITION_EARLIEST
+ * or @a LIBDALI_POSITION_LATEST to set the client read position to
+ * the earliest or latest packet.  In both cases the @a pkttime value
+ * is ignored.
  *
  * @param dlconn DataLink Connection Parameters
  * @param pktid Packet ID to set position to
@@ -254,9 +259,23 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
       return -1;
     }
   
-  /* Create packet header with command: "POSITION SET pktid pkttime" */
-  headerlen = snprintf (header, sizeof(header), "POSITION SET %lld %lld",
-			pktid, pkttime);
+  /* When positioning to earliest or latest packet in the ring, ignore pkttime */
+  if ( pktid == LIBDALI_POSITION_EARLIEST )
+    {
+      /* Create packet header with command: "POSITION SET EARLIEST" */
+      headerlen = snprintf (header, sizeof(header), "POSITION SET EARLIEST");
+    }
+  else if ( pktid == LIBDALI_POSITION_LATEST )
+    {
+      /* Create packet header with command: "POSITION SET LATEST" */
+      headerlen = snprintf (header, sizeof(header), "POSITION SET LATEST");
+    }
+  else 
+    {
+      /* Create packet header with command: "POSITION SET pktid pkttime" */
+      headerlen = snprintf (header, sizeof(header), "POSITION SET %"PRId64" %"PRId64,
+			    pktid, pkttime);
+    }
   
   /* Send command to server */
   replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
@@ -318,7 +337,7 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
     }
   
   /* Create packet header with command: "POSITION AFTER datatime" */
-  headerlen = snprintf (header, sizeof(header), "POSITION AFTER %lld",
+  headerlen = snprintf (header, sizeof(header), "POSITION AFTER %"PRId64,
 			datatime);
   
   /* Send command to server */
@@ -524,14 +543,13 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   if ( ! dlconn || ! packet || ! streamid )
     {
       dl_log_r (dlconn, 1, 1, "dl_write(): dlconn || packet || streamid is not anticipated value \n");
-      return -1;
+    return -1;
     }
   
   if ( dlconn->link < 0 )
     {
-      dl_log_r (dlconn, 1, 1, "[%s] dl_write(): Not connected to server, dlconn->link = %d\n",
-		dlconn->addr, dlconn->link);
-      return -1;
+      dl_log_r (dlconn, 1, 1, "[%s] dl_write(): dlconn->link = %d, expect >=0 \n", dlconn->addr, dlconn->link);
+    return -1;
     }
   
   /* Sanity check that connection is not in streaming mode */
@@ -552,7 +570,7 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   
   /* Create packet header with command: "WRITE streamid hpdatastart hpdataend flags size" */
   headerlen = snprintf (header, sizeof(header),
-			"WRITE %s %lld %lld %s %d",
+			"WRITE %s %"PRId64" %"PRId64" %s %d",
 			streamid, datastart, dataend, flags, packetlen);
   
   /* Send command and packet to server */
@@ -639,7 +657,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( pktid > 0 )
     {
       /* Create packet header with command: "READ pktid" */
-      headerlen = snprintf (header, sizeof(header), "READ %lld", pktid);
+      headerlen = snprintf (header, sizeof(header), "READ %"PRId64, pktid);
       
       /* Send command and packet to server */
       if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
@@ -663,7 +681,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if ( ! strncmp (header, "PACKET", 6) )
     {
       /* Parse PACKET header */
-      rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %d",
+      rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
 		   packet->streamid, &(packet->pktid), &(packet->pkttime),
 		   &(packet->datastart), &(packet->dataend), &(packet->datasize));
       
@@ -1028,7 +1046,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	      if ( ! strncmp (header, "PACKET", 6) )
 		{
 		  /* Parse PACKET header */
-		  rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %d",
+		  rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
 			       packet->streamid, &(packet->pktid), &(packet->pkttime),
 			       &(packet->datastart), &(packet->dataend), &(packet->datasize));
 		  
@@ -1236,7 +1254,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       if ( ! strncmp (header, "PACKET", 6) )
 	{
 	  /* Parse PACKET header */
-	  rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %d",
+	  rv = sscanf (header, "PACKET %s %"SCNd64" %"SCNd64" %"SCNd64" %"SCNd64" %d",
 		       packet->streamid, &(packet->pktid), &(packet->pkttime),
 		       &(packet->datastart), &(packet->dataend), &(packet->datasize));
 	  
@@ -1347,7 +1365,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   cbuffer[buflen] = '\0';
   
   /* Parse reply header */
-  if ( sscanf (buffer, "%10s %lld %lld", status, &pvalue, &size) != 3 )
+  if ( sscanf (buffer, "%10s %"SCNd64" %"SCNd64, status, &pvalue, &size) != 3 )
     {
       dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Unable to parse reply header: '%s'\n",
 		dlconn->addr, buffer);
