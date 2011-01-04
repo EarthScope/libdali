@@ -1391,8 +1391,8 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
 {
   char status[10];
   char *cbuffer = buffer;
-  int64_t pvalue;
-  int64_t size = 0;
+  long long int pvalue;
+  long long int size = 0;
   int rv = 0;
   
   if ( ! dlconn || ! buffer )
@@ -1402,7 +1402,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   cbuffer[buflen] = '\0';
   
   /* Parse reply header */
-  if ( sscanf (buffer, "%10s %"SCNd64" %"SCNd64, status, &pvalue, &size) != 3 )
+  if ( sscanf (buffer, "%10s %lld %lld", status, &pvalue, &size) != 3 )
     {
       dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Unable to parse reply header: '%s'\n",
 		dlconn->addr, buffer);
