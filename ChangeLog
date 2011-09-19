@@ -1,4 +1,4 @@
-2011.262:
+2011.262: 1.5
 	- Declare pivotal_gmtime_r_stamp in timeutils.c as static to
 	avoid conflicts with other libraries.
 
