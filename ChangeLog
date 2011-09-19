@@ -1,3 +1,6 @@
+2011.262:
+	- Declare pivotal_gmtime_r_stamp as static to avoid conflicts.
+
 2011.004: 1.4
 	- Correct return code for dl_position() for errors.
 	- Increase verbosity level for debugging message in dl_write().
