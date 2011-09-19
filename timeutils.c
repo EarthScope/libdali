@@ -667,7 +667,7 @@ dl_timestr2dltime (char *timestr)
 
 */
 
-static const char pivotal_gmtime_r_stamp[] =
+const char pivotal_gmtime_r_stamp_ld[] =
   "pivotal_gmtime_r. Copyright (C) 2009  Paul Sheer. Terms and "
   "conditions apply. Visit http://2038bug.com/ for more info.";
 

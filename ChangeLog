@@ -1,5 +1,5 @@
 2011.262: 1.5
-	- Declare pivotal_gmtime_r_stamp in timeutils.c as static to
+	- Declare pivotal_gmtime_r_stamp in timeutils.c with an _ld suffix to
 	avoid conflicts with other libraries.
 
 2011.004: 1.4
