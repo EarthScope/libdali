@@ -1,6 +1,7 @@
 2011.262: 1.5
-	- Declare pivotal_gmtime_r_stamp in timeutils.c with an _ld suffix to
-	avoid conflicts with other libraries.
+	- Add '_ld' suffix to declaration of pivotal_gmtime_r_stamp in
+	timeutils.c to avoid conflicts with other libraries.  Thanks to Doug
+	Neuhauser for the tip.
 
 2011.004: 1.4
 	- Correct return code for dl_position() for errors.
