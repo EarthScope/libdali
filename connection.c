@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2011.005
+ * modified: 2013.210
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -230,7 +230,8 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
  * @param pktid Packet ID to set position to
  * @param pkttime Packet time cooresponding to @a pktid
  *
- * @return A positive packet ID on success and -1 on error.
+ * @return A positive packet ID on success, 0 when packet is not found
+ * and -1 on error.
  ***************************************************************************/
 int64_t
 dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
@@ -248,7 +249,7 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
   if ( dlconn->link < 0 )
     return -1;
   
-  if ( pktid < 0 )
+  if ( pktid < 0 && pktid != LIBDALI_POSITION_EARLIEST && pktid != LIBDALI_POSITION_LATEST )
     return -1;
   
   /* Sanity check that connection is not in streaming mode */
@@ -294,8 +295,8 @@ dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime)
   /* Log server reply message */
   if ( rv >= 0 )
     dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
-  
-  return ( rv < 0 || replyvalue <= 0 ) ? -1 : replyvalue;
+
+  return ( rv < 0 || replyvalue < 0 ) ? -1 : replyvalue;
 }  /* End of dl_position() */
 
 

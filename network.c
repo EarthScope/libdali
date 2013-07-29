@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * Version: 2008.196
+ * Version: 2013.210
  ***************************************************************************/
 
 #include <stdio.h>
@@ -163,7 +163,7 @@ dl_connect (DLCP *dlconn)
 void
 dl_disconnect (DLCP *dlconn)
 {
-  if ( dlconn->link > 0 )
+  if ( dlconn->link >= 0 )
     {
       dlp_sockclose (dlconn->link);
       dlconn->link = -1;
