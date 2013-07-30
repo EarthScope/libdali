@@ -2,7 +2,7 @@
 	- dl_position(): return 0 when packet was not found.  Differentiates
 	between successful request (but no match) and function error.
 	Previously this function returned either a positive packet ID value
-	or -1.
+	or -1, where -1 was returned when packet was not found.
 	Fixes from Doug Neuhauser:
 	- dl_position(): allow specification of LIBDALI_POSITION_EARLIEST and
 	LIBDALI_POSITION_LATEST in parameter sanity check.  Oops.
