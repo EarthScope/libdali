@@ -1,19 +1,23 @@
 /***********************************************************************//**
  * @file libdali.h
- * 
+ *
  * Interface declarations for the DataLink library (libdali).
  *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Library General Public License
- * as published by the Free Software Foundation; either version 2 of
- * the License, or (at your option) any later version.
+ * This library is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as
+ * published by the Free Software Foundation; either version 3 of the
+ * License, or (at your option) any later version.
  *
  * This library is distributed in the hope that it will be useful, but
  * WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Library General Public License (GNU-LGPL) for more details.  The
- * GNU-LGPL and further information can be found here:
- * http://www.gnu.org/
+ * Lesser General Public License (GNU-LGPL) for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this software.
+ * If not, see <https://www.gnu.org/licenses/>.
+ *
+ * Copyright (C) 2016 Chad Trabant, IRIS Data Management Center
  *
  * @author Chad Trabant, IRIS Data Management Center
  *

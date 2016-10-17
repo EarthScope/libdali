@@ -5,6 +5,7 @@
 	- Change host name resolution to use getaddrinfo() on all platforms
 	except Windows.  Support is now nearly ubiquitous.  Still limited to
 	IPv4 addresses.
+	- Clarify licensing to be LGPLv3, include LICENSE.txt and INSTALL.
 
 2013.210: 1.6
 	- dl_position(): return 0 when packet was not found.  Differentiates
