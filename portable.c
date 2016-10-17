@@ -33,10 +33,10 @@
 
 
 /************************************************************************//**
- * @brief Start up socket subsystem (only does something for Win32)
+ * @brief Start up socket subsystem (only does something for WIN)
  *
  * Startup the network socket layer.  At the moment this is only meaningful
- * for the WIN32 platform and requests Windows sockets version 2.2.
+ * for the WIN platform and requests Windows sockets version 2.2.
  *
  * @return -1 on errors and 0 on success.
  ***************************************************************************/
@@ -204,7 +204,7 @@ dlp_noblockcheck (void)
 /***********************************************************************//**
  * @brief Set socket I/O timeout
  *
- * Set socket I/O timeout if such an option exists.  On Win32 and
+ * Set socket I/O timeout if such an option exists.  On WIN and
  * other platforms where SO_RCVTIMEO and SO_SNDTIMEO are defined this
  * sets the SO_RCVTIMEO and SO_SNDTIMEO socket options using
  * setsockopt() to the @a timeout value (specified in seconds).
@@ -265,7 +265,7 @@ dlp_setsocktimeo (SOCKET socket, int timeout)
  * seconds.  The timer is disabled by setting the timeout to zero.  On
  * most platforms this will cause a SIGALARM signal to be sent to the
  * calling process after @a timeout seconds have elapsed.  This
- * function does nothing under Win32.
+ * function does nothing under WIN.
  *
  * @param timeout Alarm timeout in seconds
  *
@@ -275,7 +275,7 @@ int
 dlp_setioalarm (int timeout)
 {
 #if defined(DLP_WIN)
-  /* Non-operation for Win32 */  
+  /* Non-operation for WIN */  
   
 #else
   struct itimerval itval;
@@ -300,7 +300,7 @@ dlp_setioalarm (int timeout)
  * @brief Resolve IP address and prepare paramters for connect()
  *
  * Resolve IP addresses and provide parameters needed for connect().
- * On Win32 this will use gethostbyname() for portability (only newer
+ * On WIN this will use gethostbyname() for portability (only newer
  * Windows platforms support getaddrinfo).  On Linux (glibc2) and
  * Solaris the reentrant gethostbyname_r() is used.
  *
@@ -462,7 +462,7 @@ dlp_strerror (void)
  * @brief Determine the current system time
  *
  * Determine the current time from the system as a dltime_t value.  On
- * the WIN32 platform this function has millisecond resulution, on
+ * the WIN platform this function has millisecond resulution, on
  * Unix platforms this function has microsecond resolution.
  *
  * @return Current time as a dltime_t value.
@@ -483,7 +483,7 @@ dlp_time (void)
   GetSystemTime(&SystemTime);
   SystemTimeToFileTime(&SystemTime, &FileTime);
   
-  /* Get the full win32 epoch value, in 100ns */
+  /* Get the full Windows epoch value, in 100ns */
   UnixTime = ((__int64)FileTime.dwHighDateTime << 32) + 
     FileTime.dwLowDateTime;
   
@@ -519,7 +519,7 @@ dlp_time (void)
 /***********************************************************************//**
  * @brief Sleep for a specified number of microseconds
  * 
- * Sleep for a given number of microseconds.  Under Win32 use SleepEx()
+ * Sleep for a given number of microseconds.  Under WIN use SleepEx()
  * and for all others use the POSIX.4 nanosleep(), which can be
  * interrupted by signals.
  *
@@ -602,7 +602,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   if (dwVersion < 0x80000000)
     dwBuild = (DWORD)(HIWORD(dwVersion));
   
-  snprintf (clientid, maxsize, "%s:%s:%ld:Win32-%d.%d (%d)",
+  snprintf (clientid, maxsize, "%s:%s:%ld:WIN-%d.%d (%d)",
 	    (prog)?prog:"",
 	    (user)?user:"",
 	    (long) pid,
