@@ -297,24 +297,25 @@ dlp_setioalarm (int timeout)
 
 
 /***********************************************************************//**
- * @brief Resolve IP address and prepare paramters for connect()
+ * @brief Resolve IP address and prepare parameters for connect()
  *
- * Resolve IP addresses and provide parameters needed for connect().
- * On WIN this will use gethostbyname() for portability (only newer
- * Windows platforms support getaddrinfo).  On Linux (glibc2) and
- * Solaris the reentrant gethostbyname_r() is used.
+ * On WIN this will use the older gethostbyname() for consistent
+ * compatibility with older OS versions.  In the future we should be
+ * able to use getaddrinfo() even on Windows.
  *
- * The real solution to name resolution is to use POSIX 1003.1g
- * getaddrinfo() because it is standardized, thread-safe and protocol
- * independent (i.e. IPv4, IPv6, etc.).  Unfortunately it is not
- * supported on many older platforms.
+ * On all other platforms use POSIX 1003.1g getaddrinfo() because it
+ * is standardized, thread-safe and protocol independent (i.e. IPv4,
+ * IPv6, etc.) and has broad support.
+ *
+ * Currently, this routine is limited to IPv4 addresses.
  *
  * @param nodename Hostname to resolve
  * @param nodeport Port number to connect to
  * @param addr Returned struct sockaddr for connect()
  * @param addrlen Returned length of @a addr
  *
- * @return 0 on success and non-zero on error.
+ * @return 0 on success and non-zero on error.  On everything but WIN
+ * an error value is the return value of getaddrinfo().
  ***************************************************************************/
 int
 dlp_getaddrinfo (char *nodename, char *nodeport,
@@ -337,65 +338,35 @@ dlp_getaddrinfo (char *nodename, char *nodeport,
   inet_addr.sin_family = AF_INET;
   inet_addr.sin_port = htons ((unsigned short int)nport);
   inet_addr.sin_addr = *(struct in_addr *) result->h_addr_list[0];
-  
-  *addr = *((struct sockaddr *) &inet_addr);
-  *addrlen = sizeof(inet_addr);
 
-#elif defined(DLP_LINUX) || defined(DLP_SOLARIS)
-  /* 512 bytes should be enough for the vast majority of cases.  If
-     not (e.g. the node has a lot of aliases) this call will fail. */
-
-  char buffer[512];
-  struct hostent *result;
-  struct hostent result_buffer;
-  struct sockaddr_in inet_addr;
-  int my_error;
-  long int nport;
-  char *tail;
-
-  #if defined(DLP_LINUX)
-  gethostbyname_r (nodename, &result_buffer,
-		   buffer, sizeof(buffer) - 1,
-		   &result, &my_error);
-  #endif
-
-  #if defined(DLP_SOLARIS)
-  result = gethostbyname_r (nodename, &result_buffer,
-                            buffer, sizeof(buffer) - 1,
-			    &my_error);
-  #endif
-
-  if ( !result )
-    return my_error;
-
-  nport = strtoul (nodeport, &tail, 0);
-
-  memset (&inet_addr, 0, sizeof (inet_addr));
-  inet_addr.sin_family = AF_INET;
-  inet_addr.sin_port = htons ((unsigned short int)nport);
-  inet_addr.sin_addr = *(struct in_addr *) result->h_addr_list[0];
-  
-  *addr = *((struct sockaddr *) &inet_addr);
+  memcpy (addr, &inet_addr, sizeof (struct sockaddr));
   *addrlen = sizeof(inet_addr);
 
 #else
-  /* This will be used by all others, it is not properly supported
-     by some but this is the future of name resolution. */
-
-  struct addrinfo *result;
+  /* getaddrinfo() will be used by all others */
+  struct addrinfo *ptr    = NULL;
+  struct addrinfo *result = NULL;
   struct addrinfo hints;
+  int rv;
 
-  memset (&hints, 0, sizeof(hints));
-  hints.ai_family = PF_INET;
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family   = AF_INET;
   hints.ai_socktype = SOCK_STREAM;
-  
-  if ( getaddrinfo (nodename, nodeport, &hints, &result) )
-    {
-      return -1;
-    }
 
-  *addr = *(result->ai_addr);
-  *addrlen = result->ai_addrlen;
+  if ((rv = getaddrinfo (nodename, nodeport, &hints, &result)))
+  {
+    return rv;
+  }
+
+  for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+  {
+    if (ptr->ai_family == AF_INET)
+    {
+      memcpy (addr, ptr->ai_addr, sizeof (struct sockaddr));
+      *addrlen = (size_t)ptr->ai_addrlen;
+      break;
+    }
+  }
 
   freeaddrinfo (result);
 
