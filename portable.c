@@ -71,7 +71,7 @@ dlp_sockstartup (void)
  * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen)
+dlp_sockconnect (SOCKET socket, struct sockaddr * inetaddr, int addrlen)
 {
 #if defined(DLP_WIN)
   if ((connect (socket, inetaddr, addrlen)) == SOCKET_ERROR)
@@ -101,7 +101,7 @@ dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen)
  * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockclose (int socket)
+dlp_sockclose (SOCKET socket)
 {
 #if defined(DLP_WIN)
   return closesocket (socket);
@@ -121,7 +121,7 @@ dlp_sockclose (int socket)
  * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_sockblock (int socket)
+dlp_sockblock (SOCKET socket)
 {
 #if defined(DLP_WIN)
   u_long flag = 0;
@@ -153,7 +153,7 @@ dlp_sockblock (int socket)
  * @return -1 on errors and 0 on success.
  ***************************************************************************/
 int
-dlp_socknoblock (int socket)
+dlp_socknoblock (SOCKET socket)
 {
 #if defined(DLP_WIN)
   u_long flag = 1;
@@ -217,7 +217,7 @@ dlp_noblockcheck (void)
  * @return -1 on error, 0 when not possible and 1 on success.
  ***************************************************************************/
 int
-dlp_setsocktimeo (int socket, int timeout)
+dlp_setsocktimeo (SOCKET socket, int timeout)
 {
 #if defined(DLP_WIN)
   int tval = timeout * 1000;
@@ -439,7 +439,7 @@ dlp_openfile (const char *filename, char perm)
 /***********************************************************************//**
  * @brief Return a description of the last system error.
  *
- * @return A description of the last system error, in the case of Win32
+ * @return A description of the last system error, in the case of WIN
  * this will be the last Windows Sockets error.
  ***************************************************************************/
 const char *

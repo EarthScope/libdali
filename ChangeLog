@@ -1,4 +1,5 @@
 2016.10.17:
+	- Change socket type to SOCKET and set appropriately for platform.
 	- Modernize portable.[ch], change DLP_WIN32 to DLP_WIN and DLP_GLIBC2
 	to DLP_WIN and re-oragnize includes.
 

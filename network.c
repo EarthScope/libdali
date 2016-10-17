@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * Version: 2013.210
+ * Version: 2016.291
  ***************************************************************************/
 
 #include <stdio.h>
@@ -35,10 +35,10 @@
  * @return the socket descriptor created.
  * @retval -1 on errors
  ***************************************************************************/
-int
+SOCKET
 dl_connect (DLCP *dlconn)
 {
-  int sock;
+  SOCKET sock;
   long int nport;
   char nodename[300];
   char nodeport[100];

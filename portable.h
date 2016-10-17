@@ -135,13 +135,18 @@ extern "C" {
 
 #endif
 
+/* Use int for SOCKET if platform includes have not defined it */
+#ifndef SOCKET
+  #define SOCKET int
+#endif
+
 extern int dlp_sockstartup (void);
-extern int dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen);
-extern int dlp_sockclose (int socket);
-extern int dlp_sockblock (int socket);
-extern int dlp_socknoblock (int socket);
+extern int dlp_sockconnect (SOCKET socket, struct sockaddr * inetaddr, int addrlen);
+extern int dlp_sockclose (SOCKET socket);
+extern int dlp_sockblock (SOCKET socket);
+extern int dlp_socknoblock (SOCKET socket);
 extern int dlp_noblockcheck (void);
-extern int dlp_setsocktimeo (int socket, int timeout);
+extern int dlp_setsocktimeo (SOCKET socket, int timeout);
 extern int dlp_setioalarm (int timeout);
 extern int dlp_getaddrinfo (char * nodename, char * nodeport,
 			    struct sockaddr * addr, size_t * addrlen);

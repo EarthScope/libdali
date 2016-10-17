@@ -17,7 +17,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2011.003
+ * modified: 2016.291
  ***************************************************************************/
 
 #ifndef LIBDALI_H
@@ -29,8 +29,8 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "1.6"        /**< libdali version */
-#define LIBDALI_RELEASE "2013.210"   /**< libdali release date */
+#define LIBDALI_VERSION "1.7dev"     /**< libdali version */
+#define LIBDALI_RELEASE "2016.291"   /**< libdali release date */
 
 #define MAXPACKETSIZE       16384    /**< Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /**< Maximum regex pattern size */
@@ -85,7 +85,7 @@ typedef struct DLCP_s
   int         iotimeout;        /**< Timeout for network I/O operations (seconds) */
   
   /* Connection parameters maintained internally */
-  int         link;		/**< The network socket descriptor, maintained internally */
+  SOCKET      link;		/**< The network socket descriptor, maintained internally */
   float       serverproto;      /**< Server version of the DataLink protocol, maintained internally */
   int32_t     maxpktsize;       /**< Maximum packet size for server, maintained internally */
   int8_t      writeperm;        /**< Write permission status from server, maintained internally */
@@ -136,7 +136,7 @@ extern void    dl_terminate (DLCP *dlconn);
 extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 
 /* network.c */
-extern int     dl_connect (DLCP *dlconn);
+extern SOCKET  dl_connect (DLCP *dlconn);
 extern void    dl_disconnect (DLCP *dlconn);
 extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
 extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
