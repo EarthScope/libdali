@@ -1,6 +1,6 @@
 /***********************************************************************//**
  * @file portable.c:
- * 
+ *
  * Platform portability routines.
  *
  * This library is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2008.193
+ * modified: 2016.291
  ***************************************************************************/
 
 #include <fcntl.h>
@@ -43,7 +43,7 @@
 int
 dlp_sockstartup (void)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   WORD wVersionRequested;
   WSADATA wsaData;
 
@@ -73,7 +73,7 @@ dlp_sockstartup (void)
 int
 dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   if ((connect (socket, inetaddr, addrlen)) == SOCKET_ERROR)
     {
       if (WSAGetLastError() != WSAEWOULDBLOCK)
@@ -103,7 +103,7 @@ dlp_sockconnect (int socket, struct sockaddr * inetaddr, int addrlen)
 int
 dlp_sockclose (int socket)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   return closesocket (socket);
 #else
   return close (socket);
@@ -123,7 +123,7 @@ dlp_sockclose (int socket)
 int
 dlp_sockblock (int socket)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   u_long flag = 0;
   
   if (ioctlsocket(socket, FIONBIO, &flag) == -1)
@@ -155,7 +155,7 @@ dlp_sockblock (int socket)
 int
 dlp_socknoblock (int socket)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   u_long flag = 1;
 
   if (ioctlsocket(socket, FIONBIO, &flag) == -1)
@@ -186,7 +186,7 @@ dlp_socknoblock (int socket)
 int
 dlp_noblockcheck (void)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   if (WSAGetLastError() != WSAEWOULDBLOCK)
     return -1;
 
@@ -219,7 +219,7 @@ dlp_noblockcheck (void)
 int
 dlp_setsocktimeo (int socket, int timeout)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   int tval = timeout * 1000;
   
   if ( setsockopt (socket, SOL_SOCKET, SO_RCVTIMEO, (char*)&tval, sizeof(tval)) )
@@ -274,7 +274,7 @@ dlp_setsocktimeo (int socket, int timeout)
 int
 dlp_setioalarm (int timeout)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   /* Non-operation for Win32 */  
   
 #else
@@ -320,7 +320,7 @@ int
 dlp_getaddrinfo (char *nodename, char *nodeport,
 		 struct sockaddr *addr, size_t *addrlen)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   struct hostent *result;
   struct sockaddr_in inet_addr;
   long int nport;
@@ -341,7 +341,7 @@ dlp_getaddrinfo (char *nodename, char *nodeport,
   *addr = *((struct sockaddr *) &inet_addr);
   *addrlen = sizeof(inet_addr);
 
-#elif defined(DLP_GLIBC2) || defined(DLP_SOLARIS)
+#elif defined(DLP_LINUX) || defined(DLP_SOLARIS)
   /* 512 bytes should be enough for the vast majority of cases.  If
      not (e.g. the node has a lot of aliases) this call will fail. */
 
@@ -353,7 +353,7 @@ dlp_getaddrinfo (char *nodename, char *nodeport,
   long int nport;
   char *tail;
 
-  #if defined(DLP_GLIBC2)
+  #if defined(DLP_LINUX)
   gethostbyname_r (nodename, &result_buffer,
 		   buffer, sizeof(buffer) - 1,
 		   &result, &my_error);
@@ -424,7 +424,7 @@ dlp_getaddrinfo (char *nodename, char *nodeport,
 int
 dlp_openfile (const char *filename, char perm)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   int flags = (perm == 'w') ? (_O_RDWR | _O_CREAT | _O_BINARY) : (_O_RDONLY | _O_BINARY);
   int mode = (_S_IREAD | _S_IWRITE);
 #else
@@ -445,7 +445,7 @@ dlp_openfile (const char *filename, char perm)
 const char *
 dlp_strerror (void)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   static char errorstr[100];
 
   snprintf (errorstr, sizeof(errorstr), "%d", WSAGetLastError());
@@ -470,7 +470,7 @@ dlp_strerror (void)
 int64_t
 dlp_time (void)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   
   static const __int64 SECS_BETWEEN_EPOCHS = 11644473600;
   static const __int64 SECS_TO_100NS = 10000000; /* 10^7 */
@@ -528,7 +528,7 @@ dlp_time (void)
 void
 dlp_usleep (unsigned long int useconds)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
 
   SleepEx ((useconds / 1000), 1);
 
@@ -567,7 +567,7 @@ dlp_usleep (unsigned long int useconds)
 int
 dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 {
-#if defined(DLP_WIN32)
+#if defined(DLP_WIN)
   char osver[100];
   char *prog = 0;
   char user[256];

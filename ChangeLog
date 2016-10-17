@@ -1,3 +1,7 @@
+2016.10.17:
+	- Modernize portable.[ch], change DLP_WIN32 to DLP_WIN and DLP_GLIBC2
+	to DLP_WIN and re-oragnize includes.
+
 2013.210: 1.6
 	- dl_position(): return 0 when packet was not found.  Differentiates
 	between successful request (but no match) and function error.
