@@ -8,6 +8,7 @@
 	- Cleanup make files, remove unused targets and need for ntwin32.mak.
 	- Add target for Cygwin to portable.h.
 	- Clarify licensing to be LGPLv3, include LICENSE.txt and INSTALL.
+	- Reformat all source code using included clang-format profile.
 
 2013.210: 1.6
 	- dl_position(): return 0 when packet was not found.  Differentiates
