@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2013.210
+ * modified: 2016.291
  ***************************************************************************/
 
 #include <stdlib.h>
@@ -41,7 +41,8 @@ dl_newdlcp (char *address, char *progname)
   
   /* Set defaults */
   strncpy (dlconn->addr, address, sizeof(dlconn->addr));
-  dlp_genclientid (progname, dlconn->clientid, sizeof(dlconn->clientid));
+  if ( dlp_genclientid (progname, dlconn->clientid, sizeof(dlconn->clientid)) < 0 )
+    dlconn->clientid[0] = '\0';
   dlconn->keepalive    = 600;
   dlconn->iotimeout    = 60;
   dlconn->link         = -1;
@@ -113,7 +114,7 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
   
   /* Send ID command including client ID */
   snprintf (sendstr, sizeof(sendstr), "ID %s",
-	    (dlconn->clientid) ? dlconn->clientid : "");
+	    (dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
   dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
   
   respsize = dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
@@ -707,7 +708,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
       packet->datasize = sdatasize;
       
       /* Check that the packet data size is not beyond the max receive buffer size */
-      if ( packet->datasize > maxdatasize )
+      if ( packet->datasize > (ssize_t)maxdatasize )
 	{
 	  char *discard;
 	  
@@ -868,7 +869,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
 	}
       
       /* If a maximum buffer size was specified check that it's large enough */
-      if ( maxinfosize && infosize > maxinfosize )
+      if ( maxinfosize && infosize > (ssize_t)maxinfosize )
 	{
 	  dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): INFO data larger (%d) than the maximum size (%d)\n",
 		    dlconn->addr, infosize, maxinfosize);
@@ -1017,7 +1018,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	  
 	  /* Send ID as a keepalive packet exchange */
 	  headerlen = snprintf (header, sizeof(header), "ID %s",
-				(dlconn->clientid) ? dlconn->clientid : "");
+				(dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
 	  
 	  if ( dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0 )
 	    {
@@ -1083,7 +1084,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
 		  packet->dataend = sdataend;
 		  packet->datasize = sdatasize;
 		  
-		  if ( packet->datasize > maxdatasize )
+		  if ( packet->datasize > (ssize_t)maxdatasize )
 		    {
 		      dl_log_r (dlconn, 2, 0,
 				"[%s] dl_collect(): packet data larger (%ld) than receiving buffer (%ld)\n",
@@ -1252,7 +1253,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	  
 	  /* Send ID as a keepalive packet exchange */
 	  headerlen = snprintf (header, sizeof(header), "ID %s",
-				(dlconn->clientid) ? dlconn->clientid : "");
+				(dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
 	  
 	  if ( dl_sendpacket (dlconn, header, headerlen,
 			      NULL, 0, NULL, 0) < 0 )
@@ -1303,7 +1304,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 	  packet->dataend = sdataend;
 	  packet->datasize = sdatasize;
 	  
-	  if ( packet->datasize > maxdatasize )
+	  if ( packet->datasize > (ssize_t)maxdatasize )
 	    {
 	      dl_log_r (dlconn, 2, 0,
 			"[%s] dl_collect_nb(): packet data larger (%ld) than receiving buffer (%ld)\n",

@@ -215,7 +215,7 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
     }
   
   /* Send data */
-  if ( send (dlconn->link, buffer, sendlen, 0) != sendlen )
+  if ( send (dlconn->link, buffer, sendlen, 0) != (ssize_t)sendlen )
     {
       dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
       return -1;
@@ -399,7 +399,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
     }
   
   /* Recv until readlen bytes have been read */
-  while ( nread < readlen )
+  while ( nread < (ssize_t)readlen )
     {
       if ( (nrecv = recv(dlconn->link, bptr, readlen-nread, 0)) < 0 )
         {
@@ -528,7 +528,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
     }
   
   /* Make sure reply is NULL terminated */
-  if ( bytesread == buflen )
+  if ( bytesread == (ssize_t)buflen )
     cbuffer[bytesread-1] = '\0';
   else
     cbuffer[bytesread] = '\0';
