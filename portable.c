@@ -525,7 +525,6 @@ int
 dlp_genclientid (char *progname, char *clientid, size_t maxsize)
 {
 #if defined(DLP_WIN)
-  char osver[100];
   char *prog = 0;
   char user[256];
   DWORD max_user       = 256;
@@ -533,7 +532,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   DWORD dwMajorVersion = 0;
   DWORD dwMinorVersion = 0;
   DWORD dwBuild        = 0;
-  int pid              = getpid ();
+  int pid              = _getpid ();
 
   /* Do a simple basename() for any supplied progname */
   if (progname && (prog = strrchr (progname, '\\')))

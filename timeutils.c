@@ -182,7 +182,7 @@ dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds)
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec   = DL_DLTIME2EPOCH (dltime);
-  ifract = (dltime_t)dltime - (isec * DLTMODULUS);
+  ifract = (int)(dltime - (isec * DLTMODULUS));
 
   /* Adjust for negative epoch times */
   if (dltime < 0 && ifract != 0)
@@ -241,7 +241,7 @@ dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds)
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec   = DL_DLTIME2EPOCH (dltime);
-  ifract = (dltime_t)dltime - (isec * DLTMODULUS);
+  ifract = (int)(dltime - (isec * DLTMODULUS));
 
   /* Adjust for negative epoch times */
   if (dltime < 0 && ifract != 0)
@@ -299,7 +299,7 @@ dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
 
   /* Reduce to Unix/POSIX epoch time and fractional seconds */
   isec   = DL_DLTIME2EPOCH (dltime);
-  ifract = (dltime_t)dltime - (isec * DLTMODULUS);
+  ifract = (int)(dltime - (isec * DLTMODULUS));
 
   /* Adjust for negative epoch times */
   if (dltime < 0 && ifract != 0)
@@ -689,7 +689,7 @@ dl_gmtime_r (int64_t *timep, struct tm *result)
   tv /= 60;
   v_tm_hour = ((int64_t)tv % (int64_t)24);
   tv /= 24;
-  v_tm_tday = tv;
+  v_tm_tday = (int)tv;
 
   TM_WRAP (v_tm_sec, v_tm_min, 60);
   TM_WRAP (v_tm_min, v_tm_hour, 60);

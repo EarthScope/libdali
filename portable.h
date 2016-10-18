@@ -96,6 +96,7 @@ extern "C" {
   #include <winsock2.h>
   #include <ws2tcpip.h>
   #include <windows.h>
+  #include <process.h>
   #include <io.h>
 
   /* For MSVC 2012 and earlier define standard int types, otherwise use inttypes.h */
@@ -112,15 +113,23 @@ extern "C" {
     #include <inttypes.h>
   #endif
 
-    #if defined(_MSC_VER)
+  #if defined(_MSC_VER)
     #if !defined(PRId64)
       #define PRId64 "I64d"
     #endif
     #if !defined(SCNd64)
       #define SCNd64 "I64d"
     #endif
+    #if !defined(ssize_t)
+      #define ssize_t SSIZE_T
+    #endif
   #endif
 
+  #define strdup _strdup
+  #define read _read
+  #define write _write
+  #define open _open
+  #define close _close
   #define snprintf _snprintf
   #define vsnprintf _vsnprintf
   #define strncasecmp _strnicmp

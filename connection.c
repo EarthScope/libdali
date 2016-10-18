@@ -52,7 +52,7 @@ dl_newdlcp (char *address, char *progname)
   dlconn->pktid          = 0;
   dlconn->pkttime        = 0;
   dlconn->keepalive_trig = -1;
-  dlconn->keepalive_time = 0.0;
+  dlconn->keepalive_time = 0;
   dlconn->terminate      = 0;
   dlconn->streaming      = 0;
 
@@ -638,7 +638,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   long long int spkttime;
   long long int sdatastart;
   long long int sdataend;
-  long long int sdatasize;
+  long int sdatasize;
 
   if (!dlconn || !packet || !packetdata)
     return -1;
@@ -682,7 +682,7 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
   if (!strncmp (header, "PACKET", 6))
   {
     /* Parse PACKET header */
-    rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lldd",
+    rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
                  packet->streamid, &spktid, &spkttime,
                  &sdatastart, &sdataend, &sdatasize);
 
@@ -947,7 +947,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
   long long int spkttime;
   long long int sdatastart;
   long long int sdataend;
-  long long int sdatasize;
+  long int sdatasize;
 
   /* For select()ing during the read loop */
   struct timeval select_tv;
@@ -1057,7 +1057,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
         if (!strncmp (header, "PACKET", 6))
         {
           /* Parse PACKET header */
-          rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lld",
+          rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
                        packet->streamid, &spktid, &spkttime,
                        &sdatastart, &sdataend, &sdatasize);
 
@@ -1187,7 +1187,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
   long long int spkttime;
   long long int sdatastart;
   long long int sdataend;
-  long long int sdatasize;
+  long int sdatasize;
 
   if (!dlconn || !packet || !packetdata)
     return DLERROR;
@@ -1276,7 +1276,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
     if (!strncmp (header, "PACKET", 6))
     {
       /* Parse PACKET header */
-      rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %lld",
+      rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
                    packet->streamid, &spktid, &spkttime,
                    &sdatastart, &sdataend, &sdatasize);
 
@@ -1415,7 +1415,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   if (size > 0)
   {
     /* Receive reply message, blocking until complete */
-    if ((rv = dl_recvdata (dlconn, buffer, size, 1)) != size)
+    if ((rv = dl_recvdata (dlconn, buffer, (size_t)size, 1)) != size)
     {
       /* Only log an error if the connection was not shut down */
       if (rv < -1)
