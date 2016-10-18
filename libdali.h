@@ -33,7 +33,7 @@ extern "C" {
 
 #include "portable.h"
 
-#define LIBDALI_VERSION "1.7dev"     /**< libdali version */
+#define LIBDALI_VERSION "1.7"        /**< libdali version */
 #define LIBDALI_RELEASE "2016.291"   /**< libdali release date */
 
 #define MAXPACKETSIZE       16384    /**< Maximum packet size for libdali */
