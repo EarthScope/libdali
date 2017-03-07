@@ -5,7 +5,7 @@
  *
  * @author Chad Trabant, IRIS Data Management Center
  *
- * modified: 2016.291
+ * modified: 2017.066
  ***************************************************************************/
 
 #include <errno.h>
@@ -111,8 +111,7 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
   }
 
   /* Send ID command including client ID */
-  snprintf (sendstr, sizeof (sendstr), "ID %s",
-            (dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
+  snprintf (sendstr, sizeof (sendstr), "ID %s", dlconn->clientid);
   dl_log_r (dlconn, 1, 2, "[%s] sending: %s\n", dlconn->addr, sendstr);
 
   respsize = dl_sendpacket (dlconn, sendstr, strlen (sendstr), NULL, 0,
@@ -1007,8 +1006,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       dl_log_r (dlconn, 1, 2, "[%s] Sending keepalive packet\n", dlconn->addr);
 
       /* Send ID as a keepalive packet exchange */
-      headerlen = snprintf (header, sizeof (header), "ID %s",
-                            (dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
+      headerlen = snprintf (header, sizeof (header), "ID %s", dlconn->clientid);
 
       if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
       {
@@ -1241,8 +1239,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       dl_log_r (dlconn, 1, 2, "[%s] Sending keepalive packet\n", dlconn->addr);
 
       /* Send ID as a keepalive packet exchange */
-      headerlen = snprintf (header, sizeof (header), "ID %s",
-                            (dlconn->clientid[0] == '\0') ? dlconn->clientid : "");
+      headerlen = snprintf (header, sizeof (header), "ID %s", dlconn->clientid);
 
       if (dl_sendpacket (dlconn, header, headerlen,
                          NULL, 0, NULL, 0) < 0)

@@ -1,4 +1,8 @@
-2016.10.17: 1.7
+2017.066:
+	- Properly the add client ID in exchanges with the server.  Thanks
+	to Keven Frechette for reporting this.
+
+2016.291: 1.7
 	- Change socket type to SOCKET and set appropriately for platform.
 	- Modernize portable.[ch], change DLP_WIN32 to DLP_WIN and DLP_GLIBC2
 	to DLP_WIN and re-oragnize includes.
