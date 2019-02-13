@@ -1,5 +1,4 @@
-
-                libdali: the DataLink client library
+# libdali: the DataLink client library
 
 This package contains the source code, documentation and example code
 for libdali, the DataLink client library.  For further information
@@ -11,7 +10,14 @@ Solaris and MS-Windows environments.
 
 For installation instructions see the INSTALL file.
 
--- Extras --
+## Building and Installing 
+
+In most Unix/Linux environments a simple 'make' will build the program.
+
+The CC and CFLAGS environment variables can be used to configure
+the build parameters.
+
+## Extras 
 
 The 'example' directory includes an example DataLink client that uses
 libdali.
@@ -19,38 +25,26 @@ libdali.
 The 'doc' directory includes all associated documentation including
 a Users Guide and man pages for library functions.
 
--- Threading --
+## Threading
 
 The library is thread-safe under Unix-like environments with the
 condition that each connection parameter set (DLCP) is handled by a
 single thread.  Thread independent logging schemes are possible.
 Under Windows the library is probably not thread-safe.
 
--- Licensing --
+## Licensing
 
-Copyright (C) 2016 Chad Trabant, IRIS Data Management Center
+GNU GPL version 3.  See included LICENSE file for details.
 
-This library is free software; you can redistribute it and/or modify
-it under the terms of the GNU Lesser General Public License as
-published by the Free Software Foundation; either version 3 of the
-License, or (at your option) any later version.
+Copyright (C) 2019 Chad Trabant, IRIS Data Management Center
 
-This library is distributed in the hope that it will be useful, but
-WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
-Lesser General Public License (GNU-LGPL) for more details.
-
-You should have received a copy of the GNU Lesser General Public
-License along with this software.
-If not, see <https://www.gnu.org/licenses/>.
-
--- Acknowlegements --
+## Acknowlegements
 
 Numerous improvements have been incorporated based on feedback and
 patches submitted by others.  Individual acknowlegements are included
 in the ChangeLog.
 
--- Pronunciation --
+## Pronunciation?
 
 lib = 'l' + [eye] + 'b'  (as in library, long 'i')
 dali = 'da' + [lee] (as in Salvador Dali)
