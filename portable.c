@@ -518,7 +518,7 @@ dlp_usleep (unsigned long int useconds)
  * @param clientid Generated client ID string will be written to this string
  * @param maxsize Maximum bytes to write to @a clientid string.
  *
- * @return the number of charaters written to clientid on success and
+ * @return the number of characters written to clientid on success and
  * -1 on error.
  ***************************************************************************/
 int
@@ -563,7 +563,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
             (long)pid,
             dwMajorVersion, dwMinorVersion, dwBuild);
 
-  return 0;
+  return (int)strlen (clientid);
 #else
   char osver[100];
   char *prog = 0;
@@ -605,6 +605,6 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
             (long)pid,
             osver);
 
-  return 0;
+  return (int)strlen (clientid);
 #endif
 } /* End of dlp_genclientid() */
