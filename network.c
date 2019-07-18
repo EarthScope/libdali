@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "libdali.h"
+#include "portable.h"
 
 /***********************************************************************/ /**
  * @brief Connect to a DataLink server
