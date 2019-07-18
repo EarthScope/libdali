@@ -37,13 +37,16 @@
 SOCKET
 dl_connect (DLCP *dlconn)
 {
+  struct addrinfo *addr0 = NULL;
+  struct addrinfo *addr = NULL;
+  struct addrinfo hints;
   SOCKET sock;
   long int nport;
   char nodename[300];
   char nodeport[100];
   char *ptr, *tail;
-  size_t addrlen;
-  struct sockaddr addr;
+  int timeout;
+  int socket_family = -1;
 
   if (dlp_sockstartup ())
   {
@@ -90,41 +93,65 @@ dl_connect (DLCP *dlconn)
     }
   }
 
+  /* Resolve for either IPv4 or IPv6 (PF_UNSPEC) for a TCP stream (SOCK_STREAM) */
+  memset (&hints, 0, sizeof (hints));
+  hints.ai_family   = PF_UNSPEC;
+  hints.ai_socktype = SOCK_STREAM;
+
   /* Resolve server address */
-  if (dlp_getaddrinfo (nodename, nodeport, &addr, &addrlen))
+  if (getaddrinfo (nodename, nodeport, &hints, &addr0))
   {
     dl_log_r (dlconn, 2, 0, "cannot resolve hostname %s\n", nodename);
     return -1;
   }
 
-  /* Create socket */
-  if ((sock = socket (PF_INET, SOCK_STREAM, 0)) < 0)
+  /* Traverse addresses trying to connect */
+  sock = -1;
+  for (addr = addr0; addr != NULL; addr = addr->ai_next)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] socket(): %s\n", dlconn->addr, dlp_strerror ());
-    dlp_sockclose (sock);
-    return -1;
-  }
-
-  /* Set socket I/O timeouts if possible */
-  if (dlconn->iotimeout)
-  {
-    int timeout = (dlconn->iotimeout > 0) ? dlconn->iotimeout : -dlconn->iotimeout;
-
-    if (dlp_setsocktimeo (sock, timeout) == 1)
+    /* Create socket */
+    if ((sock = socket (addr->ai_family, addr->ai_socktype, addr->ai_protocol)) < 0)
     {
-      dl_log_r (dlconn, 1, 2, "[%s] using system socket timeouts\n", dlconn->addr);
-
-      /* Negate timeout to indicate socket timeouts are set */
-      dlconn->iotimeout = -timeout;
+      continue;
     }
+
+    /* Set socket I/O timeouts if possible */
+    if (dlconn->iotimeout)
+    {
+      timeout = (dlconn->iotimeout > 0) ? dlconn->iotimeout : -dlconn->iotimeout;
+
+      if (dlp_setsocktimeo (sock, timeout) == 1)
+      {
+        /* Negate timeout to indicate socket timeouts are set */
+        dlconn->iotimeout = -timeout;
+      }
+    }
+
+    /* Connect socket */
+    if ((dlp_sockconnect (sock, addr->ai_addr, addr->ai_addrlen)))
+    {
+      dlp_sockclose (sock);
+      sock = -1;
+      continue;
+    }
+
+    socket_family = addr->ai_family;
+    break;
   }
 
-  /* Connect socket */
-  if ((dlp_sockconnect (sock, (struct sockaddr *)&addr, addrlen)))
+  if (sock < 0)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] connect(): %s\n", dlconn->addr, dlp_strerror ());
+    dl_log_r (dlconn, 2, 0, "[%s] Cannot connect: %s\n", dlconn->addr, dlp_strerror ());
     dlp_sockclose (sock);
+    freeaddrinfo (addr0);
     return -1;
+  }
+
+  freeaddrinfo(addr0);
+
+  if (dlconn->iotimeout < 0)
+  {
+    dl_log_r (dlconn, 1, 2, "[%s] using system socket timeouts\n", dlconn->addr);
   }
 
   /* Set socket to non-blocking */
@@ -135,8 +162,19 @@ dl_connect (DLCP *dlconn)
     return -1;
   }
 
-  /* socket connected */
-  dl_log_r (dlconn, 1, 1, "[%s] network socket opened\n", dlconn->addr);
+  /* Socket connected */
+  dl_log_r (dlconn, 1, 1, "[%s] network socket opened ", dlconn->addr);
+  switch (socket_family)
+  {
+  case PF_INET:
+    dl_log_r (dlconn, 1, 1, "(IPv4)\n");
+    break;
+  case PF_INET6:
+    dl_log_r (dlconn, 1, 1, "(IPv6)\n");
+    break;
+  default:
+    dl_log_r (dlconn, 1, 1, "(Unknown protocol)\n");
+  }
 
   dlconn->link = sock;
 

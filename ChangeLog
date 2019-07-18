@@ -1,3 +1,6 @@
+2019.199:
+	- Support for IPv6 connections, conversion to pure getaddrinfo() usage.
+
 2017.066:
 	- Properly the add client ID in exchanges with the server.  Thanks
 	to Keven Frechette for reporting this.
