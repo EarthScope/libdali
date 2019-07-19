@@ -126,8 +126,8 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
   /* Check minimum server ID response size */
   if (respsize < 11)
   {
-    dl_log_r (dlconn, 1, 2, "[%s] Server ID response too short: %d\n",
-              dlconn->addr, respstr);
+    dl_log_r (dlconn, 1, 2, "[%s] Server ID response too short: %d bytes\n",
+              dlconn->addr, respsize);
     return -1;
   }
 
@@ -629,6 +629,7 @@ int
 dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
          size_t maxdatasize)
 {
+  char *discard;
   char header[255];
   int headerlen;
   int rv = 0;
@@ -699,12 +700,10 @@ dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet, void *packetdata,
     packet->datasize  = sdatasize;
 
     /* Check that the packet data size is not beyond the max receive buffer size */
-    if (packet->datasize > (ssize_t)maxdatasize)
+    if (packet->datasize > (int64_t)maxdatasize)
     {
-      char *discard;
-
       dl_log_r (dlconn, 2, 0,
-                "[%s] dl_read(): packet data larger (%ld) than receiving buffer (%ld)\n",
+                "[%s] dl_read(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
                 dlconn->addr, packet->datasize, maxdatasize);
 
       /* Allocate temporary buffer */
@@ -859,9 +858,9 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
     }
 
     /* If a maximum buffer size was specified check that it's large enough */
-    if (maxinfosize && infosize > (ssize_t)maxinfosize)
+    if (maxinfosize && infosize > (int64_t)maxinfosize)
     {
-      dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): INFO data larger (%d) than the maximum size (%d)\n",
+      dl_log_r (dlconn, 2, 0, "[%s] dl_getinfo(): INFO data larger (%d) than the maximum size (%" PRIsize_t ")\n",
                 dlconn->addr, infosize, maxinfosize);
       return -1;
     }
@@ -1072,10 +1071,10 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
           packet->dataend   = sdataend;
           packet->datasize  = sdatasize;
 
-          if (packet->datasize > (ssize_t)maxdatasize)
+          if (packet->datasize > (int64_t)maxdatasize)
           {
             dl_log_r (dlconn, 2, 0,
-                      "[%s] dl_collect(): packet data larger (%ld) than receiving buffer (%ld)\n",
+                      "[%s] dl_collect(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
                       dlconn->addr, packet->datasize, maxdatasize);
             return DLERROR;
           }
@@ -1290,10 +1289,10 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       packet->dataend   = sdataend;
       packet->datasize  = sdatasize;
 
-      if (packet->datasize > (ssize_t)maxdatasize)
+      if (packet->datasize > (int64_t)maxdatasize)
       {
         dl_log_r (dlconn, 2, 0,
-                  "[%s] dl_collect_nb(): packet data larger (%ld) than receiving buffer (%ld)\n",
+                  "[%s] dl_collect_nb(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
                   dlconn->addr, packet->datasize, maxdatasize);
         return DLERROR;
       }
@@ -1378,9 +1377,9 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
 {
   char status[10];
   char *cbuffer = buffer;
-  long long int pvalue;
-  long long int size = 0;
-  int rv             = 0;
+  int64_t pvalue;
+  int64_t size = 0;
+  int rv       = 0;
 
   if (!dlconn || !buffer)
     return -1;
@@ -1403,7 +1402,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   /* Check that reply message will fit into buffer */
   if (size > buflen)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Reply message too large (%d) for buffer (%d)\n",
+    dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Reply message too large (%" PRId64 ") for buffer (%d)\n",
               dlconn->addr, size, buflen);
     return -1;
   }
