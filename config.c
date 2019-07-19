@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "libdali.h"
+#include "portable.h"
 
 /***********************************************************************/ /**
  * @brief Create a compound regular expression from a list in a file

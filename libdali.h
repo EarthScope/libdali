@@ -260,9 +260,18 @@ extern double  dl_dabs (double value);
 extern int     dl_readline (int fd, char *buffer, int buflen);
 
 /* logging.c */
-extern int     dl_log (int level, int verb, ...);
-extern int     dl_log_r (const DLCP *dlconn, int level, int verb, ...);
-extern int     dl_log_rl (DLLog *log, int level, int verb, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__format__ (__printf__, 3, 4)))
+#endif
+extern int     dl_log (int level, int verb, const char *format, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__format__ (__printf__, 4, 5)))
+#endif
+extern int     dl_log_r (const DLCP *dlconn, int level, int verb, const char *format, ...);
+#if defined(__GNUC__) || defined(__clang__)
+__attribute__((__format__ (__printf__, 4, 5)))
+#endif
+extern int     dl_log_rl (DLLog *log, int level, int verb, const char *format, ...);
 extern void    dl_loginit (int verbosity,
 			   void (*log_print)(char*), const char *logprefix,
 			   void (*diag_print)(char*), const char *errprefix);

@@ -320,7 +320,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   /* Sanity check that the header is not too large or zero */
   if (headerlen > 255 || headerlen == 0)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] packet header size is invalid: %d\n",
+    dl_log_r (dlconn, 2, 0, "[%s] packet header size is invalid: %" PRIsize_t "\n",
               dlconn->addr, headerlen);
     return -1;
   }
@@ -328,7 +328,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
   /* Sanity check that the header + packet data is not too large */
   if ((3 + headerlen + datalen) > MAXPACKETSIZE)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] packet is too large (%d), max is %d\n",
+    dl_log_r (dlconn, 2, 0, "[%s] packet is too large (%" PRIsize_t "), max is %d\n",
               dlconn->addr, (headerlen + datalen), MAXPACKETSIZE);
     return -1;
   }
