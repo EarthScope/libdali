@@ -28,8 +28,8 @@
 
 #include "libdali.h"
 
-static dltime_t dl_time2dltime_int (int year, int day, int hour,
-                                    int min, int sec, int usec);
+static dltime_t time2dltime_int (int year, int day, int hour,
+                                 int min, int sec, int usec);
 
 static struct tm *dl_gmtime_r (int64_t *timep, struct tm *result);
 
@@ -351,7 +351,7 @@ dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
  * Returns dltime_t time value.
  ***************************************************************************/
 static dltime_t
-dl_time2dltime_int (int year, int yday, int hour, int min, int sec, int usec)
+time2dltime_int (int year, int yday, int hour, int min, int sec, int usec)
 {
   dltime_t dltime;
   int32_t shortyear;
@@ -371,7 +371,7 @@ dl_time2dltime_int (int year, int yday, int hour, int min, int sec, int usec)
   dltime = (dltime_t) (60 * (60 * ((dltime_t)24 * days + hour) + min) + sec) * DLTMODULUS + usec;
 
   return dltime;
-} /* End of dl_time2dltime_int() */
+} /* End of time2dltime_int() */
 
 /***********************************************************************/ /**
  * @brief Convert specified time values to a dltime_t value
@@ -428,7 +428,7 @@ dl_time2dltime (int year, int day, int hour, int min, int sec, int usec)
     return DLTERROR;
   }
 
-  return dl_time2dltime_int (year, day, hour, min, sec, usec);
+  return time2dltime_int (year, day, hour, min, sec, usec);
 } /* End of dl_time2dltime() */
 
 /***********************************************************************/ /**
@@ -513,7 +513,7 @@ dl_seedtimestr2dltime (char *seedtimestr)
     return DLTERROR;
   }
 
-  return dl_time2dltime_int (year, day, hour, min, sec, usec);
+  return time2dltime_int (year, day, hour, min, sec, usec);
 } /* End of dl_seedtimestr2dltime() */
 
 /***********************************************************************/ /**
@@ -613,7 +613,7 @@ dl_timestr2dltime (char *timestr)
     return DLTERROR;
   }
 
-  return dl_time2dltime_int (year, day, hour, min, sec, usec);
+  return time2dltime_int (year, day, hour, min, sec, usec);
 } /* End of dl_timestr2dltime() */
 
 /***************************************************************************
