@@ -1,6 +1,7 @@
 2019.201:
 	- Change licensing to Apache License 2.
-	- Update Makefile to include an install method.
+	- Update Makefile to include an install method, common shared target.
+	- Remove support for Watcom-related wmake files.
 	- Fix internal time calculation for years beyond 2038.
 
 2019.199:
