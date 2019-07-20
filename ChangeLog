@@ -1,3 +1,6 @@
+2019.201:
+	- Change licensing to Apache License 2.
+
 2019.199:
 	- Support for IPv6 connections, conversion to pure getaddrinfo() usage.
 	- Incorporate platform-specific declarations into libdali.h.
