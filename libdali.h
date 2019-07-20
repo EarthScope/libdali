@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#define LIBDALI_VERSION "1.7"        /**< libdali version */
+#define LIBDALI_VERSION "1.7.0"      /**< libdali version */
 #define LIBDALI_RELEASE "2016.291"   /**< libdali release date */
 
 
@@ -178,7 +178,7 @@ typedef struct DLCP_s
   char        clientid[200];    /**< Client program ID as "progname:username:pid:arch", see dlp_genclientid() */
   int         keepalive;        /**< Interval to send keepalive/heartbeat (seconds) */
   int         iotimeout;        /**< Timeout for network I/O operations (seconds) */
-  
+
   /* Connection parameters maintained internally */
   SOCKET      link;		/**< The network socket descriptor, maintained internally */
   float       serverproto;      /**< Server version of the DataLink protocol, maintained internally */
@@ -190,7 +190,7 @@ typedef struct DLCP_s
   dltime_t    keepalive_time;   /**< Keepalive time stamp, maintained internally */
   int8_t      terminate;        /**< Boolean flag to control connection termination, maintained internally */
   int8_t      streaming;        /**< Boolean flag to indicate streaming status, maintained internally */
-  
+
   DLLog      *log;              /**< Logging parameters, maintained internally */
 } DLCP;
 
@@ -299,5 +299,5 @@ extern int  dl_addtostring (char **string, char *add, char *delim, int maxlen);
 #ifdef __cplusplus
 }
 #endif
- 
+
 #endif /* LIBDALI_H */

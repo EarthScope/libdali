@@ -1,5 +1,6 @@
 2019.201:
 	- Change licensing to Apache License 2.
+	- Update Makefile to include an install method.
 	- Fix internal time calculation for years beyond 2038.
 
 2019.199:
