@@ -206,7 +206,8 @@ dl_loginit_main (DLLog *logp, int verbosity,
  *
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Message format and optional arguments in printf style
+ * @param format Message format in printf() style
+ * @param ... Message format variables
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -235,7 +236,8 @@ dl_log (int level, int verb, const char *format, ...)
  * @param dlconn DataLink Connection Parameters with associated logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Message format and optional arguments in printf style
+ * @param format Message format in printf() style
+ * @param ... Message format variables
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -272,7 +274,8 @@ dl_log_r (const DLCP *dlconn, int level, int verb, const char *format, ...)
  * @param log DLLog logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param ... Message format and optional arguments in printf style
+ * @param format Message format in printf() style
+ * @param ... Message format variables
  *
  * @return See dl_log_main() description for return values.
  ***************************************************************************/
@@ -334,7 +337,8 @@ dl_log_rl (DLLog *log, int level, int verb, const char *format, ...)
  * @param logp DLLog logging paramters
  * @param level Level at which to log the message (1, 2 or 3)
  * @param verb Verbosity threshold at which to log the message
- * @param varlist Message format and optional arguments in printf style
+ * @param format Message format in printf() style
+ * @param varlist Message format variables
  *
  * @return The number of characters formatted on success, and a
  * a negative value on error.

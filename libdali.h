@@ -122,7 +122,8 @@ extern "C" {
 
 #endif
 
-/* Use int for SOCKET if platform includes have not defined it */
+/** @def SOCKET
+    @brief Use int for SOCKET if platform includes have not defined it */
 #ifndef SOCKET
   #define SOCKET int
 #endif
@@ -285,7 +286,7 @@ extern int  dl_savestate (DLCP *dlconn, const char *statefile);
 
 /* strutils.c */
 
-/* For a linked list of strings, as filled by strparse() */
+/** A linked list of strings, as filled by strparse() */
 typedef struct DLstrlist_s {
   char               *element;
   struct DLstrlist_s *next;
