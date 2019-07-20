@@ -340,19 +340,18 @@ dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds)
     return seedtimestr;
 } /* End of dl_dltime2seedtimestr() */
 
+
 /***************************************************************************
- * Convert specified time values to a dltime_t value, internal-only
+ * INTERNAL Convert specified date-time values to a high precision epoch time.
  *
- * Convert specified time values to a high precision epoch time
- * (1/DLTMODULUS second ticks from the epoch).  This is an internal
- * routine which does no range checking, it is assumed that checking
- * the range for each value has already been done.  The algorithm used
- * is a specific version of a generalized function in GNU glibc.
+ * This is an internal version which does no range checking, it is
+ * assumed that checking the range for each value has already been
+ * done.
  *
- * Returns dltime_t time value on success and DLTERROR on error.
+ * Returns dltime_t time value.
  ***************************************************************************/
 static dltime_t
-dl_time2dltime_int (int year, int day, int hour, int min, int sec, int usec)
+dl_time2dltime_int (int year, int yday, int hour, int min, int sec, int usec)
 {
   dltime_t dltime;
   int32_t shortyear;
@@ -367,9 +366,9 @@ dl_time2dltime_int (int year, int day, int hour, int min, int sec, int usec)
   a400                  = a100 >> 2;
   intervening_leap_days = (a4 - 492) - (a100 - 19) + (a400 - 4);
 
-  days = (365 * (shortyear - 70) + intervening_leap_days + (day - 1));
+  days = (365 * (shortyear - 70) + intervening_leap_days + (yday - 1));
 
-  dltime = (dltime_t) (60 * (60 * (24 * days + hour) + min) + sec) * DLTMODULUS + (dltime_t)usec * (1000000 / DLTMODULUS);
+  dltime = (dltime_t) (60 * (60 * ((dltime_t)24 * days + hour) + min) + sec) * DLTMODULUS + usec;
 
   return dltime;
 } /* End of dl_time2dltime_int() */
