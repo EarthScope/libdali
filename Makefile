@@ -23,7 +23,7 @@ MAN3DIR ?= $(MANDIR)/man3
 
 LIB_SRCS = timeutils.c genutils.c strutils.c \
            logging.c network.c statefile.c config.c \
-           portable.c connection.c
+           portable.c connection.c gmtime64.c
 
 LIB_OBJS = $(LIB_SRCS:.c=.o)
 LIB_LOBJS = $(LIB_SRCS:.c=.lo)
