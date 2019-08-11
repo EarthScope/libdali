@@ -31,12 +31,12 @@
  * @brief Connect to a DataLink server
  *
  * Open a network socket connection to a Datalink server and set
- * 'dlconn->link' to the new descriptor.  Expects 'dlconn->addr' to
- * be in 'host:port' format.  Either the host, port or both are
- * optional, if the host is not specified 'localhost' is assumed, if
- * the port is not specified '16000' is assumed, if neither is
- * specified (only a colon) then 'localhost' and port '16000' are
- * assumed.
+ * 'dlconn->link' to the new descriptor.  Expects 'dlconn->addr' to be
+ * in 'host:port' or 'host@port' format.  Either the host, port or
+ * both are optional, if the host is not specified 'localhost' is
+ * assumed, if the port is not specified '16000' is assumed, if
+ * neither is specified (only a separator) then 'localhost' and port
+ * '16000' are assumed.
  *
  * If a permanent error is detected (invalid port specified) the
  * dlconn->terminate flag will be set so the dl_collect() family of
@@ -67,43 +67,49 @@ dl_connect (DLCP *dlconn)
     return -1;
   }
 
-  /* Check server address string and use defaults if needed:
-   * If only ':' is specified neither host nor port specified
-   * If no ':' is included no port was specified
-   * If ':' is the first character no host was specified
-   */
-  if (!strcmp (dlconn->addr, ":"))
+  /* Search address host-port separator, first for '@', then ':' */
+  if ((ptr = strchr (dlconn->addr, '@')) == NULL && (ptr = strchr (dlconn->addr, ':')))
   {
-    strcpy (nodename, "localhost");
-    strcpy (nodeport, "16000");
+    /* If first ':' is not the last, this is not a separator */
+    if (strrchr (dlconn->addr, ':') != ptr)
+      ptr = NULL;
   }
-  else if ((ptr = strchr (dlconn->addr, ':')) == NULL)
+
+  /* If address begins with the separator */
+  if (dlconn->addr == ptr)
+  {
+    if (dlconn->addr[1] == '\0')  /* Only a separator */
+    {
+      strcpy (nodename, LD_DEFAULT_HOST);
+      strcpy (nodeport, LD_DEFAULT_PORT);
+    }
+    else /* Only a port */
+    {
+      strcpy (nodename, LD_DEFAULT_HOST);
+      strncpy (nodeport, dlconn->addr + 1, sizeof (nodeport));
+    }
+  }
+  /* Otherwise if no separator, use default port */
+  else if (ptr == NULL)
   {
     strncpy (nodename, dlconn->addr, sizeof (nodename));
-    strcpy (nodeport, "16000");
+    strcpy (nodeport, LD_DEFAULT_PORT);
   }
-  else
+  /* Otherwise separate host and port */
+  else if ((ptr - dlconn->addr) < sizeof (nodename))
   {
-    if (ptr == dlconn->addr)
-    {
-      strcpy (nodename, "localhost");
-    }
-    else
-    {
-      strncpy (nodename, dlconn->addr, (ptr - dlconn->addr));
-      nodename[(ptr - dlconn->addr)] = '\0';
-    }
+    strncpy (nodename, dlconn->addr, (ptr - dlconn->addr));
+    nodename[(ptr - dlconn->addr)] = '\0';
+    strncpy (nodeport, ptr + 1, sizeof (nodeport));
+  }
 
-    strcpy (nodeport, ptr + 1);
-
-    /* Sanity test the port number */
-    nport = strtoul (nodeport, &tail, 10);
-    if (*tail || (nport <= 0 || nport > 0xffff))
-    {
-      dl_log_r (dlconn, 2, 0, "server port specified incorrectly\n");
-      dlconn->terminate = 1;
-      return -1;
-    }
+  /* Sanity test the port number */
+  nport = strtoul (nodeport, &tail, 10);
+  if (*tail || (nport <= 0 || nport > 0xffff))
+  {
+    dl_log_r (dlconn, 2, 0, "server port specified incorrectly\n");
+    dlconn->terminate = 1;
+    return -1;
   }
 
   /* Resolve for either IPv4 or IPv6 (PF_UNSPEC) for a TCP stream (SOCK_STREAM) */

@@ -128,6 +128,9 @@ extern "C" {
   #define SOCKET int
 #endif
 
+#define LD_DEFAULT_HOST "localhost"  /**< Default host for libdali */
+#define LD_DEFAULT_PORT "16000"      /**< Default port for libdali */
+
 #define MAXPACKETSIZE       16384    /**< Maximum packet size for libdali */
 #define MAXREGEXSIZE        16384    /**< Maximum regex pattern size */
 #define MAX_LOG_MSG_LENGTH  200      /**< Maximum length of log messages */
