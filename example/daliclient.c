@@ -125,7 +125,7 @@ main (int argc, char **argv)
 	{
 	  dl_dltime2seedtimestr (dlpack.datastart, timestr, 1);
 	  
-	  dl_log (0, 0, "Received %s (%lld), %s, %d\n",
+	  dl_log (0, 0, "Received %s (%" PRId64 "), %s, %d\n",
 		  dlpack.streamid, dlpack.pktid, timestr, dlpack.datasize);
 	}
     }
