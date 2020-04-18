@@ -18,3 +18,8 @@
 h2.memtitle:hover .permalink a:before {
   visibility: visible;
 }
+
+/* Hide the navpath (breadcrumbs) */
+.navpath {
+  display: none;
+}
