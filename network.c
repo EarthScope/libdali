@@ -32,7 +32,7 @@
  *
  * Open a network socket connection to a Datalink server and set
  * 'dlconn->link' to the new descriptor.  Expects 'dlconn->addr' to be
- * in 'host:port' or 'host@port' format.  Either the host, port or
+ * in 'host:port' or 'host\@port' format.  Either the host, port or
  * both are optional, if the host is not specified 'localhost' is
  * assumed, if the port is not specified '16000' is assumed, if
  * neither is specified (only a separator) then 'localhost' and port

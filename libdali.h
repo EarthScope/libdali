@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2019:
+ * Copyright (C) 2020
  * @author Chad Trabant, IRIS Data Management Center
  ***************************************************************************/
 
@@ -28,9 +28,14 @@
 extern "C" {
 #endif
 
-#define LIBDALI_VERSION "1.7.0"      /**< libdali version */
-#define LIBDALI_RELEASE "2016.291"   /**< libdali release date */
+#define LIBDALI_VERSION "1.8.0"      /**< libdali version */
+#define LIBDALI_RELEASE "2020.108"   /**< libdali release date */
 
+/** @defgroup connection Connection managment functions */
+/** @defgroup network Connection network functions */
+/** @defgroup time-related Time definitions and functions */
+/** @defgroup logging Central Logging */
+/** @defgroup utility-functions General Utility Functions */
 
 /* C99 standard headers */
 #include <stdlib.h>
@@ -147,6 +152,14 @@ extern "C" {
 #define DLPACKET    1      /**< Packet returned */
 #define DLNOPACKET  2      /**< No packet for non-blocking dl_collect_nb() */
 
+/** @addtogroup time-related
+    @brief Definitions and functions for related to library time values
+
+    Internally the library uses an integer value to represent time as
+    the number of microseconds since the Unix/POSIX epoch (Jan 1 1970).
+
+    @{ */
+
 /** High precision time tick interval as 1/modulus seconds *
  * Default modulus of 1000000 defines tick interval as a microsecond */
 #define DLTMODULUS 1000000
@@ -165,6 +178,43 @@ extern "C" {
  *  Require a large (>= 64-bit) integer type */
 typedef int64_t dltime_t;
 
+extern char *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds);
+extern char *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds);
+extern char *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds);
+extern dltime_t dl_time2dltime (int year, int day, int hour, int min, int sec, int usec);
+extern dltime_t dl_seedtimestr2dltime (char *seedtimestr);
+extern dltime_t dl_timestr2dltime (char *timestr);
+extern int dl_doy2md (int year, int jday, int *month, int *mday);
+extern int dl_md2doy (int year, int month, int mday, int *jday);
+
+/** @} */
+
+/** @addtogroup logging
+    @brief Central logging functions for the library and calling programs
+
+    This central logging facility is used for all logging performed by
+    the library.
+
+    The logging can be configured to send messages to arbitrary
+    functions, referred to as \c log_print() and \c diag_print().
+    This allows output to be re-directed to other logging systems if
+    needed.
+
+    It is also possible to assign prefixes to log messages for
+    identification, referred to as \c logprefix and \c errprefix.
+
+    @anchor logging-levels
+    Three message levels are recognized:
+    - 0 : Normal log messages, printed using \c log_print() with \c logprefix
+    - 1  : Diagnostic messages, printed using \c diag_print() with \c logprefix
+    - 2+ : Error messages, printed using \c diag_print() with \c errprefix
+
+    It is the task of the \c ms_log() and \c ms_log_l() functions to
+    format a message using printf conventions and pass the formatted
+    string to the appropriate printing function.
+
+    @{ */
+
 /** Logging parameters */
 typedef struct DLLog_s
 {
@@ -174,6 +224,12 @@ typedef struct DLLog_s
   const char *errprefix;        /**< Error message prefix */
   int  verbosity;               /**< Verbosity level */
 } DLLog;
+/** @} */
+
+/** @addtogroup connection
+    @brief Definitions and functions for DataLink connections
+
+    @{ */
 
 /** DataLink connection parameters */
 typedef struct DLCP_s
@@ -209,8 +265,6 @@ typedef struct DLPacket_s
   int32_t     datasize;         /**< Data size in bytes */
 } DLPacket;
 
-
-/* connection.c */
 extern DLCP *  dl_newdlcp (char *address, char *progname);
 extern void    dl_freedlcp (DLCP *dlconn);
 extern int     dl_exchangeIDs (DLCP *dlconn, int parseresp);
@@ -231,10 +285,18 @@ extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
 extern void    dl_terminate (DLCP *dlconn);
 
+extern int     dl_recoverstate (DLCP *dlconn, const char *statefile);
+extern int     dl_savestate (DLCP *dlconn, const char *statefile);
+/** @} */
+
 /* config.c */
 extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 
-/* network.c */
+/** @addtogroup network
+    @brief Functions for network DataLink connections
+
+    @{ */
+
 extern SOCKET  dl_connect (DLCP *dlconn);
 extern void    dl_disconnect (DLCP *dlconn);
 extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
@@ -243,24 +305,10 @@ extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
 			      void *respbuf, int resplen);
 extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
 extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
+/** @} */
 
-/* timeutils.c */
-extern int     dl_doy2md (int year, int jday, int *month, int *mday);
-extern int     dl_md2doy (int year, int month, int mday, int *jday);
-extern char   *dl_dltime2isotimestr (dltime_t dltime, char *isotimestr, int8_t subseconds);
-extern char   *dl_dltime2mdtimestr (dltime_t dltime, char *mdtimestr, int8_t subseconds);
-extern char   *dl_dltime2seedtimestr (dltime_t dltime, char *seedtimestr, int8_t subseconds);
-extern dltime_t dl_time2dltime (int year, int day, int hour, int min, int sec, int usec);
-extern dltime_t dl_seedtimestr2dltime (char *seedtimestr);
-extern dltime_t dl_timestr2dltime (char *timestr);
-
-/* genutils.c */
-extern int     dl_splitstreamid (char *streamid, char *w, char *x, char *y, char *z, char *type);
-extern int     dl_bigendianhost (void);
-extern double  dl_dabs (double value);
-extern int     dl_readline (int fd, char *buffer, int buflen);
-
-/* logging.c */
+/** @addtogroup logging
+    @{ */
 #if defined(__GNUC__) || defined(__clang__)
 __attribute__((__format__ (__printf__, 3, 4)))
 #endif
@@ -282,12 +330,16 @@ extern void    dl_loginit_r (DLCP *dlconn, int verbosity,
 extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
 			      void (*log_print)(char*), const char *logprefix,
 			      void (*diag_print)(char*), const char *errprefix);
+/** @} */
 
-/* statefile.c */
-extern int  dl_recoverstate (DLCP *dlconn, const char *statefile);
-extern int  dl_savestate (DLCP *dlconn, const char *statefile);
+/** @addtogroup utility-functions
+    @brief General utility functions
 
-/* strutils.c */
+    @{ */
+extern int     dl_splitstreamid (char *streamid, char *w, char *x, char *y, char *z, char *type);
+extern int     dl_bigendianhost (void);
+extern double  dl_dabs (double value);
+extern int     dl_readline (int fd, char *buffer, int buflen);
 
 /** A linked list of strings, as filled by strparse() */
 typedef struct DLstrlist_s {
@@ -298,7 +350,7 @@ typedef struct DLstrlist_s {
 extern int  dl_strparse (const char *string, const char *delim, DLstrlist **list);
 extern int  dl_strncpclean (char *dest, const char *source, int length);
 extern int  dl_addtostring (char **string, char *add, char *delim, int maxlen);
-
+/** @} */
 
 #ifdef __cplusplus
 }
