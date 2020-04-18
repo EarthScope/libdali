@@ -12,7 +12,7 @@
  *
  * This file is part of the DataLink Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -364,11 +364,11 @@ dl_log_main (DLLog *logp, int level, int verb, const char *format, va_list *varl
     {
       if (logp->errprefix != NULL)
       {
-        strncpy (message, logp->errprefix, MAX_LOG_MSG_LENGTH);
+        strncpy (message, logp->errprefix, MAX_LOG_MSG_LENGTH - 1);
       }
       else
       {
-        strncpy (message, "error: ", MAX_LOG_MSG_LENGTH);
+        strncpy (message, "error: ", MAX_LOG_MSG_LENGTH - 1);
       }
 
       presize  = strlen (message);
@@ -391,7 +391,7 @@ dl_log_main (DLLog *logp, int level, int verb, const char *format, va_list *varl
     {
       if (logp->logprefix != NULL)
       {
-        strncpy (message, logp->logprefix, MAX_LOG_MSG_LENGTH);
+        strncpy (message, logp->logprefix, MAX_LOG_MSG_LENGTH - 1);
       }
 
       presize  = strlen (message);
@@ -414,7 +414,7 @@ dl_log_main (DLLog *logp, int level, int verb, const char *format, va_list *varl
     {
       if (logp->logprefix != NULL)
       {
-        strncpy (message, logp->logprefix, MAX_LOG_MSG_LENGTH);
+        strncpy (message, logp->logprefix, MAX_LOG_MSG_LENGTH - 1);
       }
 
       presize  = strlen (message);

@@ -5,7 +5,7 @@
  *
  * This file is part of the DataLink Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -100,7 +100,7 @@ dl_connect (DLCP *dlconn)
   {
     strncpy (nodename, dlconn->addr, (ptr - dlconn->addr));
     nodename[(ptr - dlconn->addr)] = '\0';
-    strncpy (nodeport, ptr + 1, sizeof (nodeport));
+    strncpy (nodeport, ptr + 1, sizeof (nodeport) - 1);
   }
 
   /* Sanity test the port number */
@@ -369,7 +369,7 @@ dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
     /* Check for a message from the server */
     if ((bytesread = dl_recvheader (dlconn, respbuf, resplen, 0)) > 0)
     {
-      dl_log_r (dlconn, 2, 0, "[%s] %s", dlconn->addr, respbuf);
+      dl_log_r (dlconn, 2, 0, "[%s] %*s", dlconn->addr, bytesread, (char *)respbuf);
     }
 
     return -1;

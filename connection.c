@@ -5,7 +5,7 @@
  *
  * This file is part of the DataLink Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -52,9 +52,9 @@ dl_newdlcp (char *address, char *progname)
   }
 
   /* Set defaults */
-  strncpy (dlconn->addr, address, sizeof (dlconn->addr));
+  strncpy (dlconn->addr, address, sizeof (dlconn->addr) - 1);
   if (dlp_genclientid (progname, dlconn->clientid, sizeof (dlconn->clientid)) < 0)
-    dlconn->clientid[0]  = '\0';
+    dlconn->clientid[0] = '\0';
   dlconn->keepalive      = 600;
   dlconn->iotimeout      = 60;
   dlconn->link           = -1;
@@ -1403,7 +1403,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   if (sscanf (buffer, "%10s %lld %lld", status, &pvalue, &size) != 3)
   {
     dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Unable to parse reply header: '%s'\n",
-              dlconn->addr, buffer);
+              dlconn->addr, (char *)buffer);
     return -1;
   }
 
@@ -1455,7 +1455,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
   else
   {
     dl_log_r (dlconn, 2, 0, "[%s] dl_handlereply(): Unrecognized reply string %.5s\n",
-              dlconn->addr, buffer);
+              dlconn->addr, (char *)buffer);
     rv = -1;
   }
 

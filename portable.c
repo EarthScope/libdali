@@ -5,7 +5,7 @@
  *
  * This file is part of the DataLink Library.
  *
- * Copyright (c) 2019 Chad Trabant, IRIS Data Management Center
+ * Copyright (c) 2020 Chad Trabant, IRIS Data Management Center
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -512,7 +512,7 @@ dlp_genclientid (char *progname, char *clientid, size_t maxsize)
   /* Lookup system name and release */
   if (uname (&myname) >= 0)
   {
-    snprintf (osver, sizeof (osver), "%s-%s",
+    snprintf (osver, sizeof (osver), "%.50s-%.48s",
               myname.sysname, myname.release);
   }
   else
