@@ -1,3 +1,6 @@
+2019.108: 1.8
+	- Finish initial documentation generation system.
+
 2019.223:
 	- Allow host and port to be separated with '@', e.g. host@port to 
 	allow for numeric IPv6 address usage.
