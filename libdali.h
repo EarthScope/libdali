@@ -284,19 +284,16 @@ extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 			      size_t maxdatasize, int8_t endflag);
 extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
 extern void    dl_terminate (DLCP *dlconn);
-
+extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 extern int     dl_recoverstate (DLCP *dlconn, const char *statefile);
 extern int     dl_savestate (DLCP *dlconn, const char *statefile);
 /** @} */
 
-/* config.c */
-extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 
 /** @addtogroup network
     @brief Functions for network DataLink connections
 
     @{ */
-
 extern SOCKET  dl_connect (DLCP *dlconn);
 extern void    dl_disconnect (DLCP *dlconn);
 extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
@@ -336,6 +333,11 @@ extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
     @brief General utility functions
 
     @{ */
+extern const char *dlp_strerror (void);
+extern int     dlp_openfile (const char *filename, char perm);
+extern int64_t dlp_time (void);
+extern void    dlp_usleep (unsigned long int useconds);
+extern int     dlp_genclientid (char *progname, char *clientid, size_t maxsize);
 extern int     dl_splitstreamid (char *streamid, char *w, char *x, char *y, char *z, char *type);
 extern int     dl_bigendianhost (void);
 extern double  dl_dabs (double value);
