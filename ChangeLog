@@ -1,5 +1,8 @@
-2023.335:
+2023.335: 1.8.1
 	- Add const qualifier to string accepted by logging routines.
+	- Fix a few compiler warnings.
+	- Update Doxyfile as suggested by doxygen
+	- Rebrand IRIS -> EarthScope
 
 2019.108: 1.8
 	- Finish initial documentation generation system.
