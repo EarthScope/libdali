@@ -35,8 +35,8 @@
 #include "libdali.h"
 
 void dl_loginit_main (DLLog *logp, int verbosity,
-                      void (*log_print) (char *), const char *logprefix,
-                      void (*diag_print) (char *), const char *errprefix);
+                      void (*log_print) (const char *), const char *logprefix,
+                      void (*diag_print) (const char *), const char *errprefix);
 
 int dl_log_main (DLLog *logp, int level, int verb, const char *format, va_list *varlist);
 
@@ -52,8 +52,8 @@ DLLog gDLLog = {NULL, NULL, NULL, NULL, 0};
  ***************************************************************************/
 void
 dl_loginit (int verbosity,
-            void (*log_print) (char *), const char *logprefix,
-            void (*diag_print) (char *), const char *errprefix)
+            void (*log_print) (const char *), const char *logprefix,
+            void (*diag_print) (const char *), const char *errprefix)
 {
   dl_loginit_main (&gDLLog, verbosity, log_print, logprefix, diag_print, errprefix);
 } /* End of dl_loginit() */
@@ -69,8 +69,8 @@ dl_loginit (int verbosity,
  ***************************************************************************/
 void
 dl_loginit_r (DLCP *dlconn, int verbosity,
-              void (*log_print) (char *), const char *logprefix,
-              void (*diag_print) (char *), const char *errprefix)
+              void (*log_print) (const char *), const char *logprefix,
+              void (*diag_print) (const char *), const char *errprefix)
 {
   if (!dlconn)
     return;
@@ -102,8 +102,8 @@ dl_loginit_r (DLCP *dlconn, int verbosity,
  ***************************************************************************/
 DLLog *
 dl_loginit_rl (DLLog *log, int verbosity,
-               void (*log_print) (char *), const char *logprefix,
-               void (*diag_print) (char *), const char *errprefix)
+               void (*log_print) (const char *), const char *logprefix,
+               void (*diag_print) (const char *), const char *errprefix)
 {
   DLLog *logp;
 
@@ -158,8 +158,8 @@ dl_loginit_rl (DLLog *log, int verbosity,
  ***************************************************************************/
 void
 dl_loginit_main (DLLog *logp, int verbosity,
-                 void (*log_print) (char *), const char *logprefix,
-                 void (*diag_print) (char *), const char *errprefix)
+                 void (*log_print) (const char *), const char *logprefix,
+                 void (*diag_print) (const char *), const char *errprefix)
 {
   if (!logp)
     return;

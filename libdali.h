@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBDALI_VERSION "1.8.0"      /**< libdali version */
-#define LIBDALI_RELEASE "2020.108"   /**< libdali release date */
+#define LIBDALI_VERSION "1.8.1"      /**< libdali version */
+#define LIBDALI_RELEASE "2023.335"   /**< libdali release date */
 
 /** @defgroup connection Connection managment functions */
 /** @defgroup network Connection network functions */
@@ -218,11 +218,11 @@ extern int dl_md2doy (int year, int month, int mday, int *jday);
 /** Logging parameters */
 typedef struct DLLog_s
 {
-  void (*log_print)();          /**< Function pointer for log message printing */
-  const char *logprefix;        /**< Log message prefix */
-  void (*diag_print)();         /**< Function pointer for diagnostic/error message printing */
-  const char *errprefix;        /**< Error message prefix */
-  int  verbosity;               /**< Verbosity level */
+  void (*log_print) (const char *);  /**< Function pointer for log message printing */
+  const char *logprefix;             /**< Log message prefix */
+  void (*diag_print) (const char *); /**< Function pointer for diagnostic/error message printing */
+  const char *errprefix;             /**< Error message prefix */
+  int verbosity;                     /**< Verbosity level */
 } DLLog;
 /** @} */
 
@@ -319,14 +319,14 @@ __attribute__((__format__ (__printf__, 4, 5)))
 #endif
 extern int     dl_log_rl (DLLog *log, int level, int verb, const char *format, ...);
 extern void    dl_loginit (int verbosity,
-			   void (*log_print)(char*), const char *logprefix,
-			   void (*diag_print)(char*), const char *errprefix);
+			   void (*log_print)(const char*), const char *logprefix,
+			   void (*diag_print)(const char*), const char *errprefix);
 extern void    dl_loginit_r (DLCP *dlconn, int verbosity,
-			     void (*log_print)(char*), const char *logprefix,
-			     void (*diag_print)(char*), const char *errprefix);
+			     void (*log_print)(const char*), const char *logprefix,
+			     void (*diag_print)(const char*), const char *errprefix);
 extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
-			      void (*log_print)(char*), const char *logprefix,
-			      void (*diag_print)(char*), const char *errprefix);
+			      void (*log_print)(const char*), const char *logprefix,
+			      void (*diag_print)(const char*), const char *errprefix);
 /** @} */
 
 /** @addtogroup utility-functions

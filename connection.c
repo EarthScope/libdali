@@ -1387,7 +1387,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
 int
 dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value)
 {
-  char status[10];
+  char status[11];
   char *cbuffer = buffer;
   int64_t pvalue;
   int64_t size = 0;
