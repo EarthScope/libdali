@@ -18,7 +18,7 @@
  * limitations under the License.
  *
  * Copyright (C) 2020
- * @author Chad Trabant, IRIS Data Management Center
+ * @author Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
 #ifndef LIBDALI_H

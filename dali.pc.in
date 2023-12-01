@@ -5,7 +5,7 @@ includedir=@INCLUDEDIR@
 
 Name: libdali
 Description: The C library for the DataLink protocol
-URL: https://github.com/iris-edu/libdali
+URL: https://github.com/earthscope/libdali
 Version: @VERSION@
 Cflags: -I${includedir}
 Libs: -L${libdir} -ldali
