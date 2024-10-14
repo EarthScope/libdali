@@ -1,3 +1,7 @@
+2024.228:
+	- Change internal packet ID values to uint64_t.
+	- Add special packet ID values, e.g. LIBDALI_PKTID_ERROR, etc.
+
 2023.335: 1.8.1
 	- Add const qualifier to string accepted by logging routines.
 	- Fix a few compiler warnings.
@@ -8,7 +12,7 @@
 	- Finish initial documentation generation system.
 
 2019.223:
-	- Allow host and port to be separated with '@', e.g. host@port to 
+	- Allow host and port to be separated with '@', e.g. host@port to
 	allow for numeric IPv6 address usage.
 
 2019.201:
@@ -75,8 +79,8 @@
 2008.256: 1.1
 	- DataLink protocol addition of packet end time changes, this
 	modified the WRITE command and PACKET response to include
-	both the packt data start and end times. 
-	
+	both the packt data start and end times.
+
 2008.196: 1.0
 	- Do not fail if setsockopt() failed to set socket timeouts.
 
@@ -107,7 +111,7 @@
 	- Replace redundant error message for unsuccessful sending of
 	WRITE commands with a check for reply from server in
 	dl_sendpacket().
-	- Remove const qualifier from user-supplied logging functions. 
+	- Remove const qualifier from user-supplied logging functions.
 	- Fix dlp_genclientid() and defines for Win32.
 
 2008.074: 0.9.3

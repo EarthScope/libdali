@@ -17,7 +17,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * Copyright (C) 2020
+ * Copyright (C) 2024
  * @author Chad Trabant, EarthScope Data Services
  ***************************************************************************/
 
@@ -28,8 +28,8 @@
 extern "C" {
 #endif
 
-#define LIBDALI_VERSION "1.8.1"      /**< libdali version */
-#define LIBDALI_RELEASE "2023.335"   /**< libdali release date */
+#define LIBDALI_VERSION "2.0.0"      /**< libdali version */
+#define LIBDALI_RELEASE "2024.288"   /**< libdali release date */
 
 /** @defgroup connection Connection managment functions */
 /** @defgroup network Connection network functions */
@@ -140,8 +140,13 @@ extern "C" {
 #define MAXREGEXSIZE        16384    /**< Maximum regex pattern size */
 #define MAX_LOG_MSG_LENGTH  200      /**< Maximum length of log messages */
 
-#define LIBDALI_POSITION_EARLIEST -2 /**< Earliest position in the buffer */
-#define LIBDALI_POSITION_LATEST   -3 /**< Latest position in the buffer */
+/* Special values for packet IDs */
+#define LIBDALI_PKTID_ERROR    (UINT64_MAX)
+#define LIBDALI_PKTID_NONE     (UINT64_MAX - 1)
+#define LIBDALI_PKTID_EARLIEST (UINT64_MAX - 2)
+#define LIBDALI_PKTID_LATEST   (UINT64_MAX - 3)
+#define LIBDALI_PKTID_NEXT     (UINT64_MAX - 4)
+#define LIBDALI_PKTID_MAXIMUM  (UINT64_MAX - 10)
 
 /** Maximium stream ID string length */
 #define MAXSTREAMID 60
@@ -242,9 +247,9 @@ typedef struct DLCP_s
   /* Connection parameters maintained internally */
   SOCKET      link;		/**< The network socket descriptor, maintained internally */
   float       serverproto;      /**< Server version of the DataLink protocol, maintained internally */
-  int32_t     maxpktsize;       /**< Maximum packet size for server, maintained internally */
+  uint32_t    maxpktsize;       /**< Maximum packet size for server, maintained internally */
   int8_t      writeperm;        /**< Write permission status from server, maintained internally */
-  int64_t     pktid;            /**< Packet ID of last packet received, maintained internally */
+  uint64_t    pktid;            /**< Packet ID of last packet received, maintained internally */
   dltime_t    pkttime;          /**< Packet time of last packet received, maintained internally */
   int8_t      keepalive_trig;   /**< Send keepalive trigger, maintained internally */
   dltime_t    keepalive_time;   /**< Keepalive time stamp, maintained internally */
@@ -258,35 +263,35 @@ typedef struct DLCP_s
 typedef struct DLPacket_s
 {
   char        streamid[MAXSTREAMID]; /**< Stream ID */
-  int64_t     pktid;            /**< Packet ID */
+  uint64_t    pktid;            /**< Packet ID */
   dltime_t    pkttime;          /**< Packet time */
   dltime_t    datastart;        /**< Data start time */
   dltime_t    dataend;          /**< Data end time */
   int32_t     datasize;         /**< Data size in bytes */
 } DLPacket;
 
-extern DLCP *  dl_newdlcp (char *address, char *progname);
-extern void    dl_freedlcp (DLCP *dlconn);
-extern int     dl_exchangeIDs (DLCP *dlconn, int parseresp);
-extern int64_t dl_position (DLCP *dlconn, int64_t pktid, dltime_t pkttime);
-extern int64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
+extern DLCP *dl_newdlcp (char *address, char *progname);
+extern void dl_freedlcp (DLCP *dlconn);
+extern int dl_exchangeIDs (DLCP *dlconn, int parseresp);
+extern uint64_t dl_position (DLCP *dlconn, uint64_t pktid, dltime_t pkttime);
+extern uint64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
 extern int64_t dl_match (DLCP *dlconn, char *matchpattern);
 extern int64_t dl_reject (DLCP *dlconn, char *rejectpattern);
-extern int64_t dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
-			 dltime_t datastart, dltime_t dataend, int ack);
-extern int     dl_read (DLCP *dlconn, int64_t pktid, DLPacket *packet,
-			void *packetdata, size_t maxdatasize);
-extern int     dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
-			   char **infodata, size_t maxinfosize);
-extern int     dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
-			   size_t maxdatasize, int8_t endflag);
-extern int     dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
-			      size_t maxdatasize, int8_t endflag);
-extern int     dl_handlereply (DLCP *dlconn, void *buffer, int buflen, int64_t *value);
-extern void    dl_terminate (DLCP *dlconn);
-extern char   *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
-extern int     dl_recoverstate (DLCP *dlconn, const char *statefile);
-extern int     dl_savestate (DLCP *dlconn, const char *statefile);
+extern uint64_t dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
+                          dltime_t datastart, dltime_t dataend, int ack);
+extern int dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet,
+                    void *packetdata, size_t maxdatasize);
+extern int dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
+                       char **infodata, size_t maxinfosize);
+extern int dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
+                       size_t maxdatasize, int8_t endflag);
+extern int dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
+                          size_t maxdatasize, int8_t endflag);
+extern int dl_handlereply (DLCP *dlconn, void *buffer, int buflen, uint64_t *value);
+extern void dl_terminate (DLCP *dlconn);
+extern char *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
+extern int dl_recoverstate (DLCP *dlconn, const char *statefile);
+extern int dl_savestate (DLCP *dlconn, const char *statefile);
 /** @} */
 
 
