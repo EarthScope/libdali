@@ -716,26 +716,22 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     return -1;
   }
 
-  /* Request a specific packet */
-  if (pktid > 0)
+  /* Create packet header with command: "READ pktid" */
+  headerlen = snprintf (header, sizeof (header), "READ %lld", (long long int)pktid);
+
+  if (headerlen <= 0)
   {
-    /* Create packet header with command: "READ pktid" */
-    headerlen = snprintf (header, sizeof (header), "READ %lld", (long long int)pktid);
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating READ command\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
 
-    if (headerlen <= 0)
-    {
-      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating READ command\n",
-                dlconn->addr, __func__);
-      return -1;
-    }
-
-    /* Send command and packet to server */
-    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
-    {
-      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending READ command\n",
-                dlconn->addr, __func__);
-      return -1;
-    }
+  /* Send command and packet to server */
+  if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending READ command\n",
+              dlconn->addr, __func__);
+    return -1;
   }
 
   /* Receive packet header, blocking until received */
