@@ -63,7 +63,7 @@ dl_connect (DLCP *dlconn)
 
   if (dlp_sockstartup ())
   {
-    dl_log_r (dlconn, 2, 0, "could not initialize network sockets\n");
+    dl_log_r (dlconn, 2, 0, "could not initialize network socket\n");
     return -1;
   }
 
@@ -542,8 +542,8 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
 
   if (buflen < 255)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] dl_recvheader(): buffer length to small (%zd)\n",
-              dlconn->addr, buflen);
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): buffer length to small (%zd)\n",
+              dlconn->addr, __func__, buflen);
     return -2;
   }
 

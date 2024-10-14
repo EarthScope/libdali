@@ -50,8 +50,8 @@ DataLink client commands go into the header section of a DataLink
 packet with any associated data in the data section.
 
 The server will reply to most client commands with a status indicator
-of either OK or ERROR and include a integer value (meaning is command
-dependent) and an optional message.
+of either OK or ERROR and include an unsigned integer value (meaning
+is command dependent) and an optional message.
 
 The command description below includes the commands themselves in
 upper case letters with required arguments in lower case letters

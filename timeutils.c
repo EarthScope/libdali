@@ -58,7 +58,7 @@ dl_doy2md (int year, int jday, int *month, int *mday)
   /* Sanity check for the supplied year */
   if (year < 1900 || year > 2100)
   {
-    dl_log (2, 0, "dl_doy2md(): year (%d) is out of range\n", year);
+    dl_log (2, 0, "%s(): year (%d) is out of range\n", __func__, year);
     return -1;
   }
 
@@ -71,7 +71,7 @@ dl_doy2md (int year, int jday, int *month, int *mday)
 
   if (jday > 365 + leap || jday <= 0)
   {
-    dl_log (2, 0, "dl_doy2md(): day-of-year (%d) is out of range\n", jday);
+    dl_log (2, 0, "%s(): day-of-year (%d) is out of range\n", __func__, jday);
     return -1;
   }
 
@@ -116,17 +116,17 @@ dl_md2doy (int year, int month, int mday, int *jday)
   /* Sanity check for the supplied parameters */
   if (year < 1900 || year > 2100)
   {
-    dl_log (2, 0, "dl_md2doy(): year (%d) is out of range\n", year);
+    dl_log (2, 0, "%s(): year (%d) is out of range\n", __func__, year);
     return -1;
   }
   if (month < 1 || month > 12)
   {
-    dl_log (2, 0, "dl_md2doy(): month (%d) is out of range\n", month);
+    dl_log (2, 0, "%s(): month (%d) is out of range\n", __func__, month);
     return -1;
   }
   if (mday < 1 || mday > 31)
   {
-    dl_log (2, 0, "dl_md2doy(): day-of-month (%d) is out of range\n", mday);
+    dl_log (2, 0, "%s(): day-of-month (%d) is out of range\n", __func__, mday);
     return -1;
   }
 
@@ -140,8 +140,8 @@ dl_md2doy (int year, int month, int mday, int *jday)
   /* Check that the day-of-month jives with specified month */
   if (mday > days[month - 1])
   {
-    dl_log (2, 0, "dl_md2doy(): day-of-month (%d) is out of range for month %d\n",
-            mday, month);
+    dl_log (2, 0, "%s(): day-of-month (%d) is out of range for month %d\n",
+            __func__, mday, month);
     return -1;
   }
 
@@ -393,37 +393,37 @@ dl_time2dltime (int year, int day, int hour, int min, int sec, int usec)
 {
   if (year < 1900 || year > 2100)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with year value: %d\n", year);
+    dl_log (2, 0, "%s(): Error with year value: %d\n", __func__, year);
     return DLTERROR;
   }
 
   if (day < 1 || day > 366)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with day value: %d\n", day);
+    dl_log (2, 0, "%s(): Error with day value: %d\n", __func__, day);
     return DLTERROR;
   }
 
   if (hour < 0 || hour > 23)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with hour value: %d\n", hour);
+    dl_log (2, 0, "%s(): Error with hour value: %d\n", __func__, hour);
     return DLTERROR;
   }
 
   if (min < 0 || min > 59)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with minute value: %d\n", min);
+    dl_log (2, 0, "%s(): Error with minute value: %d\n", __func__, min);
     return DLTERROR;
   }
 
   if (sec < 0 || sec > 60)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with second value: %d\n", sec);
+    dl_log (2, 0, "%s(): Error with second value: %d\n", __func__, sec);
     return DLTERROR;
   }
 
   if (usec < 0 || usec > 999999)
   {
-    dl_log (2, 0, "dl_time2dltime(): Error with microsecond value: %d\n", usec);
+    dl_log (2, 0, "%s(): Error with microsecond value: %d\n", __func__, usec);
     return DLTERROR;
   }
 
@@ -472,43 +472,43 @@ dl_seedtimestr2dltime (char *seedtimestr)
 
   if (fields < 1)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error converting time string: %s\n", seedtimestr);
+    dl_log (2, 0, "%s(): Error converting time string: %s\n", __func__, seedtimestr);
     return DLTERROR;
   }
 
   if (year < 1900 || year > 3000)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with year value: %d\n", year);
+    dl_log (2, 0, "%s(): Error with year value: %d\n", __func__, year);
     return DLTERROR;
   }
 
   if (day < 1 || day > 366)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with day value: %d\n", day);
+    dl_log (2, 0, "%s(): Error with day value: %d\n", __func__, day);
     return DLTERROR;
   }
 
   if (hour < 0 || hour > 23)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with hour value: %d\n", hour);
+    dl_log (2, 0, "%s(): Error with hour value: %d\n", __func__, hour);
     return DLTERROR;
   }
 
   if (min < 0 || min > 59)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with minute value: %d\n", min);
+    dl_log (2, 0, "%s(): Error with minute value: %d\n", __func__, min);
     return DLTERROR;
   }
 
   if (sec < 0 || sec > 60)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with second value: %d\n", sec);
+    dl_log (2, 0, "%s(): Error with second value: %d\n", __func__, sec);
     return DLTERROR;
   }
 
   if (usec < 0 || usec > 999999)
   {
-    dl_log (2, 0, "dl_seedtimestr2dltime(): Error with fractional second value: %d\n", usec);
+    dl_log (2, 0, "%s(): Error with fractional second value: %d\n", __func__, usec);
     return DLTERROR;
   }
 
@@ -560,25 +560,25 @@ dl_timestr2dltime (char *timestr)
 
   if (fields < 1)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error converting time string: %s\n", timestr);
+    dl_log (2, 0, "%s(): Error converting time string: %s\n", __func__, timestr);
     return DLTERROR;
   }
 
   if (year < 1900 || year > 3000)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with year value: %d\n", year);
+    dl_log (2, 0, "%s(): Error with year value: %d\n", __func__, year);
     return DLTERROR;
   }
 
   if (mon < 1 || mon > 12)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with month value: %d\n", mon);
+    dl_log (2, 0, "%s(): Error with month value: %d\n", __func__, mon);
     return DLTERROR;
   }
 
   if (mday < 1 || mday > 31)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with day value: %d\n", mday);
+    dl_log (2, 0, "%s(): Error with day value: %d\n", __func__, mday);
     return DLTERROR;
   }
 
@@ -590,25 +590,25 @@ dl_timestr2dltime (char *timestr)
 
   if (hour < 0 || hour > 23)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with hour value: %d\n", hour);
+    dl_log (2, 0, "%s(): Error with hour value: %d\n", __func__, hour);
     return DLTERROR;
   }
 
   if (min < 0 || min > 59)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with minute value: %d\n", min);
+    dl_log (2, 0, "%s(): Error with minute value: %d\n", __func__, min);
     return DLTERROR;
   }
 
   if (sec < 0 || sec > 60)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with second value: %d\n", sec);
+    dl_log (2, 0, "%s(): Error with second value: %d\n", __func__, sec);
     return DLTERROR;
   }
 
   if (usec < 0 || usec > 999999)
   {
-    dl_log (2, 0, "dl_timestr2dltime(): Error with fractional second value: %d\n", usec);
+    dl_log (2, 0, "%s(): Error with fractional second value: %d\n", __func__, usec);
     return DLTERROR;
   }
 
