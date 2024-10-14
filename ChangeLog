@@ -1,6 +1,7 @@
 2024.228:
 	- Change internal packet ID values to uint64_t.
 	- Add special packet ID values, e.g. LIBDALI_PKTID_ERROR, etc.
+	- Remove unused dl_strparse().
 
 2023.335: 1.8.1
 	- Add const qualifier to string accepted by logging routines.

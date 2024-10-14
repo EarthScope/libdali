@@ -348,13 +348,6 @@ extern int     dl_bigendianhost (void);
 extern double  dl_dabs (double value);
 extern int     dl_readline (int fd, char *buffer, int buflen);
 
-/** A linked list of strings, as filled by strparse() */
-typedef struct DLstrlist_s {
-  char               *element;
-  struct DLstrlist_s *next;
-} DLstrlist;
-
-extern int  dl_strparse (const char *string, const char *delim, DLstrlist **list);
 extern int  dl_strncpclean (char *dest, const char *source, int length);
 extern int  dl_addtostring (char **string, char *add, char *delim, int maxlen);
 /** @} */
