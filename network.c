@@ -441,7 +441,7 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
   }
 
   /* Recv until readlen bytes have been read */
-  while (nread > 0 && nread < (int64_t)readlen)
+  while (nread >= 0 && nread < (int64_t)readlen)
   {
     if ((nrecv = recv (dlconn->link, bptr, readlen - (size_t)nread, 0)) < 0)
     {
@@ -452,8 +452,8 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
         if (nread == 0)
           break;
 
-        /* Corner case: if some data has been received in non-blocking
-		 mode we will loop forever until readlen bytes are read */
+        /* Corner case: if some data has been received in non-blocking mode
+         * we will loop until readlen bytes are read or an IO timer fires. */
       }
       else
       {
