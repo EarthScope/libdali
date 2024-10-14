@@ -78,7 +78,7 @@ dlp_sockconnect (SOCKET socket, struct sockaddr *inetaddr, int addrlen)
       return -1;
   }
 #else
-  if ((connect (socket, inetaddr, addrlen)) == -1)
+  if ((connect (socket, inetaddr, (socklen_t)addrlen)) == -1)
   {
     if (errno != EINPROGRESS)
       return -1;

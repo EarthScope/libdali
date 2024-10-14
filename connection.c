@@ -290,8 +290,15 @@ dl_position (DLCP *dlconn, uint64_t pktid, dltime_t pkttime)
                           pktid, pkttime);
   }
 
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating POSITION command\n",
+              dlconn->addr, __func__);
+    return LIBDALI_PKTID_ERROR;
+  }
+
   /* Send command to server */
-  replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0,
                             reply, sizeof (reply));
 
   if (replylen <= 0)
@@ -358,8 +365,15 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
   headerlen = snprintf (header, sizeof (header), "POSITION AFTER %lld",
                         (long long int)datatime);
 
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating POSITION command\n",
+              dlconn->addr, __func__);
+    return LIBDALI_PKTID_ERROR;
+  }
+
   /* Send command to server */
-  replylen = dl_sendpacket (dlconn, header, headerlen, NULL, 0,
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0,
                             reply, sizeof (reply));
 
   if (replylen <= 0)
@@ -402,12 +416,12 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
  * on error.
  ***************************************************************************/
 int64_t
-dl_match (DLCP *dlconn, char *matchpattern)
+dl_match (DLCP *dlconn, const char *matchpattern)
 {
   uint64_t replyvalue = 0;
   char reply[255];
   char header[255];
-  long int patternlen;
+  size_t patternlen;
   int headerlen;
   int replylen;
   int rv;
@@ -429,12 +443,18 @@ dl_match (DLCP *dlconn, char *matchpattern)
   patternlen = (matchpattern) ? strlen (matchpattern) : 0;
 
   /* Create packet header with command: "MATCH size" */
-  headerlen = snprintf (header, sizeof (header), "MATCH %ld",
-                        patternlen);
+  headerlen = snprintf (header, sizeof (header), "MATCH %zu", patternlen);
+
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating MATCH command header\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
 
   /* Send command and pattern to server */
-  replylen = dl_sendpacket (dlconn, header, headerlen,
-                            matchpattern, patternlen,
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen,
+                            (void *)matchpattern, patternlen,
                             reply, sizeof (reply));
 
   if (replylen <= 0)
@@ -451,7 +471,7 @@ dl_match (DLCP *dlconn, char *matchpattern)
   if (rv >= 0)
     dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
 
-  return (rv < 0) ? -1 : replyvalue;
+  return (rv < 0) ? -1 : (int64_t)replyvalue;
 } /* End of dl_match() */
 
 /***********************************************************************/ /**
@@ -472,12 +492,12 @@ dl_match (DLCP *dlconn, char *matchpattern)
  * on error.
  ***************************************************************************/
 int64_t
-dl_reject (DLCP *dlconn, char *rejectpattern)
+dl_reject (DLCP *dlconn, const char *rejectpattern)
 {
   uint64_t replyvalue = 0;
   char reply[255];
   char header[255];
-  long int patternlen;
+  size_t patternlen;
   int headerlen;
   int replylen;
   int rv;
@@ -502,9 +522,16 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   headerlen = snprintf (header, sizeof (header), "REJECT %ld",
                         patternlen);
 
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating REJECT command header\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
   /* Send command and pattern to server */
-  replylen = dl_sendpacket (dlconn, header, headerlen,
-                            rejectpattern, patternlen,
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen,
+                            (void *)rejectpattern, patternlen,
                             reply, sizeof (reply));
 
   if (replylen <= 0)
@@ -521,7 +548,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
   if (rv >= 0)
     dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
 
-  return (rv < 0) ? -1 : replyvalue;
+  return (rv < 0) ? -1 : (int64_t)replyvalue;
 } /* End of dl_reject() */
 
 /***********************************************************************/ /**
@@ -549,7 +576,7 @@ dl_reject (DLCP *dlconn, char *rejectpattern)
  * @retval >=0 on success when acknowledgement is requested
  ***************************************************************************/
 uint64_t
-dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
+dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
           dltime_t datastart, dltime_t dataend, int ack)
 {
   uint64_t replyvalue = 0;
@@ -585,19 +612,26 @@ dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
   /* Sanity check that packet data is not larger than max packet size if known */
   if (dlconn->maxpktsize > 0 && packetlen > dlconn->maxpktsize)
   {
-    dl_log_r (dlconn, 1, 1, "[%s] %s(): Packet length (%d) greater than max packet size (%d)\n",
+    dl_log_r (dlconn, 1, 1, "[%s] %s(): Packet length (%zu) greater than max packet size (%u)\n",
               dlconn->addr, __func__, packetlen, dlconn->maxpktsize);
     return LIBDALI_PKTID_ERROR;
   }
 
   /* Create packet header with command: "WRITE streamid hpdatastart hpdataend flags size" */
   headerlen = snprintf (header, sizeof (header),
-                        "WRITE %s %" PRId64 " %" PRId64 " %s %d",
+                        "WRITE %s %" PRId64 " %" PRId64 " %s %zu",
                         streamid, datastart, dataend,
                         flags, packetlen);
 
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating WRITE command header\n",
+              dlconn->addr, __func__);
+    return LIBDALI_PKTID_ERROR;
+  }
+
   /* Send command and packet to server */
-  replylen = dl_sendpacket (dlconn, header, headerlen,
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen,
                             packet, packetlen,
                             (ack) ? reply : NULL, (ack) ? sizeof (reply) : 0);
 
@@ -662,11 +696,11 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
   int headerlen;
   int rv = 0;
 
-  long long int spktid;
-  long long int spkttime;
-  long long int sdatastart;
-  long long int sdataend;
-  long int sdatasize;
+  uint64_t spktid;
+  int64_t spkttime;
+  int64_t sdatastart;
+  int64_t sdataend;
+  uint32_t sdatasize;
 
   if (!dlconn || !packet || !packetdata)
     return -1;
@@ -688,8 +722,15 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     /* Create packet header with command: "READ pktid" */
     headerlen = snprintf (header, sizeof (header), "READ %lld", (long long int)pktid);
 
+    if (headerlen <= 0)
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating READ command\n",
+                dlconn->addr, __func__);
+      return -1;
+    }
+
     /* Send command and packet to server */
-    if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
     {
       dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending READ command\n",
                 dlconn->addr, __func__);
@@ -710,7 +751,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
   if (!strncmp (header, "PACKET", 6))
   {
     /* Parse PACKET header */
-    rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
+    rv = sscanf (header, "PACKET %s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
                  packet->streamid, &spktid, &spkttime,
                  &sdatastart, &sdataend, &sdatasize);
 
@@ -728,10 +769,10 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     packet->datasize  = sdatasize;
 
     /* Check that the packet data size is not beyond the max receive buffer size */
-    if (packet->datasize > (int64_t)maxdatasize)
+    if (packet->datasize > maxdatasize)
     {
       dl_log_r (dlconn, 2, 0,
-                "[%s] %s(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
+                "[%s] %s(): packet data larger (%" PRIu32 ") than receiving buffer (%" PRIsize_t ")\n",
                 dlconn->addr, __func__, packet->datasize, maxdatasize);
 
       /* Allocate temporary buffer */
@@ -791,7 +832,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     return -1;
   }
 
-  return packet->datasize;
+  return (int)packet->datasize;
 } /* End of dl_read() */
 
 /***********************************************************************/ /**
@@ -823,8 +864,8 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
   char header[255];
   char type[255];
   int headerlen;
-  int infosize = 0;
-  int rv       = 0;
+  uint64_t infosize = 0;
+  int rv            = 0;
 
   if (!dlconn || !infotype || !infodata)
     return -1;
@@ -848,8 +889,15 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
   headerlen = snprintf (header, sizeof (header), "INFO %s %s", infotype,
                         (infomatch) ? infomatch : "");
 
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating INFO command\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
   /* Send command and packet to server */
-  if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+  if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
   {
     dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending INFO command\n",
               dlconn->addr, __func__);
@@ -869,7 +917,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
   if (!strncmp (header, "INFO", 4))
   {
     /* Parse INFO header */
-    rv = sscanf (header, "INFO %s %d", type, &infosize);
+    rv = sscanf (header, "INFO %s %" SCNu64, type, &infosize);
 
     if (rv != 2)
     {
@@ -886,9 +934,9 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
     }
 
     /* If a maximum buffer size was specified check that it's large enough */
-    if (maxinfosize && infosize > (int64_t)maxinfosize)
+    if (maxinfosize && infosize > maxinfosize)
     {
-      dl_log_r (dlconn, 2, 0, "[%s] %s(): INFO data larger (%d) than the maximum size (%" PRIsize_t ")\n",
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): INFO data larger (%" PRIu64 ") than the maximum size (%" PRIsize_t ")\n",
                 dlconn->addr, __func__, infosize, maxinfosize);
       return -1;
     }
@@ -898,7 +946,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
     {
       if (!(*infodata = malloc (infosize)))
       {
-        dl_log_r (dlconn, 2, 0, "[%s] %s(): error allocating receving buffer of %d bytes\n",
+        dl_log_r (dlconn, 2, 0, "[%s] %s(): error allocating receving buffer of %" PRIu64 " bytes\n",
                   dlconn->addr, __func__, infosize);
         return -1;
       }
@@ -969,11 +1017,11 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
   int headerlen;
   int rv;
 
-  long long int spktid;
-  long long int spkttime;
-  long long int sdatastart;
-  long long int sdataend;
-  long int sdatasize;
+  uint64_t spktid;
+  int64_t spkttime;
+  int64_t sdatastart;
+  int64_t sdataend;
+  uint32_t sdatasize;
 
   /* For select()ing during the read loop */
   struct timeval select_tv;
@@ -992,8 +1040,15 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
     /* Create packet header with command: "STREAM" */
     headerlen = snprintf (header, sizeof (header), "STREAM");
 
+    if (headerlen <= 0)
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating STREAM command\n",
+                dlconn->addr, __func__);
+      return DLERROR;
+    }
+
     /* Send command to server */
-    if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
     {
       dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending STREAM command\n",
                 dlconn->addr, __func__);
@@ -1011,8 +1066,15 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
     /* Create packet header with command: "ENDSTREAM" */
     headerlen = snprintf (header, sizeof (header), "ENDSTREAM");
 
+    if (headerlen <= 0)
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating ENDSTREAM command\n",
+                dlconn->addr, __func__);
+      return DLERROR;
+    }
+
     /* Send command to server */
-    if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
     {
       dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending ENDSTREAM command\n",
                 dlconn->addr, __func__);
@@ -1035,7 +1097,14 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
       /* Send ID as a keepalive packet exchange */
       headerlen = snprintf (header, sizeof (header), "ID %s", dlconn->clientid);
 
-      if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+      if (headerlen <= 0)
+      {
+        dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating keepalive packet\n",
+                  dlconn->addr, __func__);
+        return DLERROR;
+      }
+
+      if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
       {
         dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending keepalive packet\n",
                   dlconn->addr, __func__);
@@ -1082,7 +1151,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
         if (!strncmp (header, "PACKET", 6))
         {
           /* Parse PACKET header */
-          rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
+          rv = sscanf (header, "PACKET %s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
                        packet->streamid, &spktid, &spkttime,
                        &sdatastart, &sdataend, &sdatasize);
 
@@ -1099,7 +1168,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
           packet->dataend   = sdataend;
           packet->datasize  = sdatasize;
 
-          if (packet->datasize > (int64_t)maxdatasize)
+          if (packet->datasize > maxdatasize)
           {
             dl_log_r (dlconn, 2, 0,
                       "[%s] %s(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
@@ -1209,11 +1278,11 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
   int headerlen;
   int rv;
 
-  long long int spktid;
-  long long int spkttime;
-  long long int sdatastart;
-  long long int sdataend;
-  long int sdatasize;
+  uint64_t spktid;
+  int64_t spkttime;
+  int64_t sdatastart;
+  int64_t sdataend;
+  uint32_t sdatasize;
 
   if (!dlconn || !packet || !packetdata)
     return DLERROR;
@@ -1227,8 +1296,15 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
     /* Create packet header with command: "STREAM" */
     headerlen = snprintf (header, sizeof (header), "STREAM");
 
+    if (headerlen <= 0)
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating STREAM command\n",
+                dlconn->addr, __func__);
+      return DLERROR;
+    }
+
     /* Send command to server */
-    if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
     {
       dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending STREAM command\n",
                 dlconn->addr, __func__);
@@ -1246,8 +1322,15 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
     /* Create packet header with command: "ENDSTREAM" */
     headerlen = snprintf (header, sizeof (header), "ENDSTREAM");
 
+    if (headerlen <= 0)
+    {
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating ENDSTREAM command\n",
+                dlconn->addr, __func__);
+      return DLERROR;
+    }
+
     /* Send command to server */
-    if (dl_sendpacket (dlconn, header, headerlen, NULL, 0, NULL, 0) < 0)
+    if (dl_sendpacket (dlconn, header, (size_t)headerlen, NULL, 0, NULL, 0) < 0)
     {
       dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending ENDSTREAM command\n",
                 dlconn->addr, __func__);
@@ -1269,7 +1352,14 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       /* Send ID as a keepalive packet exchange */
       headerlen = snprintf (header, sizeof (header), "ID %s", dlconn->clientid);
 
-      if (dl_sendpacket (dlconn, header, headerlen,
+      if (headerlen <= 0)
+      {
+        dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating keepalive packet\n",
+                  dlconn->addr, __func__);
+        return DLERROR;
+      }
+
+      if (dl_sendpacket (dlconn, header, (size_t)headerlen,
                          NULL, 0, NULL, 0) < 0)
       {
         dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending keepalive packet\n",
@@ -1301,7 +1391,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
     if (!strncmp (header, "PACKET", 6))
     {
       /* Parse PACKET header */
-      rv = sscanf (header, "PACKET %s %lld %lld %lld %lld %ld",
+      rv = sscanf (header, "PACKET %s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
                    packet->streamid, &spktid, &spkttime,
                    &sdatastart, &sdataend, &sdatasize);
 
@@ -1402,7 +1492,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
  * @retval 1 "ERROR" received
  ***************************************************************************/
 int
-dl_handlereply (DLCP *dlconn, void *buffer, int buflen, uint64_t *value)
+dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value)
 {
   char status[11];
   char *cbuffer = buffer;
@@ -1431,7 +1521,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, int buflen, uint64_t *value)
   /* Check that reply message will fit into buffer */
   if (size > buflen)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] %s(): Reply message too large (%" PRIu64 ") for buffer (%d)\n",
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): Reply message too large (%" PRIu64 ") for buffer (%zu)\n",
               dlconn->addr, __func__, size, buflen);
     return -1;
   }

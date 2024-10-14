@@ -267,31 +267,35 @@ typedef struct DLPacket_s
   dltime_t    pkttime;          /**< Packet time */
   dltime_t    datastart;        /**< Data start time */
   dltime_t    dataend;          /**< Data end time */
-  int32_t     datasize;         /**< Data size in bytes */
+  uint32_t    datasize;         /**< Data size in bytes */
 } DLPacket;
 
 extern DLCP *dl_newdlcp (char *address, char *progname);
-extern void dl_freedlcp (DLCP *dlconn);
-extern int dl_exchangeIDs (DLCP *dlconn, int parseresp);
+extern void  dl_freedlcp (DLCP *dlconn);
+extern int   dl_exchangeIDs (DLCP *dlconn, int parseresp);
+
 extern uint64_t dl_position (DLCP *dlconn, uint64_t pktid, dltime_t pkttime);
 extern uint64_t dl_position_after (DLCP *dlconn, dltime_t datatime);
-extern int64_t dl_match (DLCP *dlconn, char *matchpattern);
-extern int64_t dl_reject (DLCP *dlconn, char *rejectpattern);
-extern uint64_t dl_write (DLCP *dlconn, void *packet, int packetlen, char *streamid,
-                          dltime_t datastart, dltime_t dataend, int ack);
-extern int dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet,
-                    void *packetdata, size_t maxdatasize);
-extern int dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
-                       char **infodata, size_t maxinfosize);
-extern int dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
-                       size_t maxdatasize, int8_t endflag);
-extern int dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
-                          size_t maxdatasize, int8_t endflag);
-extern int dl_handlereply (DLCP *dlconn, void *buffer, int buflen, uint64_t *value);
-extern void dl_terminate (DLCP *dlconn);
+extern int64_t  dl_match (DLCP *dlconn, const char *matchpattern);
+extern int64_t  dl_reject (DLCP *dlconn, const char *rejectpattern);
+
+extern uint64_t dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
+                           dltime_t datastart, dltime_t dataend, int ack);
+
+extern int   dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet,
+                      void *packetdata, size_t maxdatasize);
+
+extern int   dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
+                         char **infodata, size_t maxinfosize);
+extern int   dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
+                         size_t maxdatasize, int8_t endflag);
+extern int   dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
+                            size_t maxdatasize, int8_t endflag);
+extern int   dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value);
+extern void  dl_terminate (DLCP *dlconn);
 extern char *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
-extern int dl_recoverstate (DLCP *dlconn, const char *statefile);
-extern int dl_savestate (DLCP *dlconn, const char *statefile);
+extern int   dl_recoverstate (DLCP *dlconn, const char *statefile);
+extern int   dl_savestate (DLCP *dlconn, const char *statefile);
 /** @} */
 
 
@@ -299,14 +303,14 @@ extern int dl_savestate (DLCP *dlconn, const char *statefile);
     @brief Functions for network DataLink connections
 
     @{ */
-extern SOCKET  dl_connect (DLCP *dlconn);
-extern void    dl_disconnect (DLCP *dlconn);
-extern int     dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
-extern int     dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
-			      void *databuf, size_t datalen,
-			      void *respbuf, int resplen);
-extern int     dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
-extern int     dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
+extern SOCKET dl_connect (DLCP *dlconn);
+extern void   dl_disconnect (DLCP *dlconn);
+extern int    dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
+extern int    dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
+                             void *databuf, size_t datalen,
+                             void *respbuf, size_t resplen);
+extern int    dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
+extern int    dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
 /** @} */
 
 /** @addtogroup logging
@@ -324,11 +328,11 @@ __attribute__((__format__ (__printf__, 4, 5)))
 #endif
 extern int     dl_log_rl (DLLog *log, int level, int verb, const char *format, ...);
 extern void    dl_loginit (int verbosity,
-			   void (*log_print)(const char*), const char *logprefix,
-			   void (*diag_print)(const char*), const char *errprefix);
+                           void (*log_print)(const char*), const char *logprefix,
+                           void (*diag_print)(const char*), const char *errprefix);
 extern void    dl_loginit_r (DLCP *dlconn, int verbosity,
-			     void (*log_print)(const char*), const char *logprefix,
-			     void (*diag_print)(const char*), const char *errprefix);
+                             void (*log_print)(const char*), const char *logprefix,
+                             void (*diag_print)(const char*), const char *errprefix);
 extern DLLog  *dl_loginit_rl (DLLog *log, int verbosity,
 			      void (*log_print)(const char*), const char *logprefix,
 			      void (*diag_print)(const char*), const char *errprefix);

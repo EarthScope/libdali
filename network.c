@@ -54,10 +54,9 @@ dl_connect (DLCP *dlconn)
   struct addrinfo *addr = NULL;
   struct addrinfo hints;
   SOCKET sock;
-  long int nport;
   char nodename[300] = {0};
   char nodeport[100] = {0};
-  char *ptr, *tail;
+  char *ptr;
   int timeout;
   int socket_family = -1;
 
@@ -103,15 +102,6 @@ dl_connect (DLCP *dlconn)
     strncpy (nodeport, ptr + 1, sizeof (nodeport) - 1);
   }
 
-  /* Sanity test the port number */
-  nport = strtoul (nodeport, &tail, 10);
-  if (*tail || (nport <= 0 || nport > 0xffff))
-  {
-    dl_log_r (dlconn, 2, 0, "server port specified incorrectly\n");
-    dlconn->terminate = 1;
-    return -1;
-  }
-
   /* Resolve for either IPv4 or IPv6 (PF_UNSPEC) for a TCP stream (SOCK_STREAM) */
   memset (&hints, 0, sizeof (hints));
   hints.ai_family   = PF_UNSPEC;
@@ -147,7 +137,7 @@ dl_connect (DLCP *dlconn)
     }
 
     /* Connect socket */
-    if ((dlp_sockconnect (sock, addr->ai_addr, addr->ai_addrlen)))
+    if ((dlp_sockconnect (sock, addr->ai_addr, (int)addr->ai_addrlen)))
     {
       dlp_sockclose (sock);
       sock = -1;
@@ -327,10 +317,10 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
 int
 dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
                void *databuf, size_t datalen,
-               void *respbuf, int resplen)
+               void *respbuf, size_t resplen)
 {
   int bytesread = 0; /* bytes read into resp buffer */
-  char wirepacket[MAXPACKETSIZE];
+  uint8_t wirepacket[MAXPACKETSIZE];
 
   if (!dlconn || !headerbuf)
     return -1;
@@ -451,9 +441,9 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
   }
 
   /* Recv until readlen bytes have been read */
-  while (nread < (int64_t)readlen)
+  while (nread > 0 && nread < (int64_t)readlen)
   {
-    if ((nrecv = recv (dlconn->link, bptr, readlen - nread, 0)) < 0)
+    if ((nrecv = recv (dlconn->link, bptr, readlen - (size_t)nread, 0)) < 0)
     {
       /* The only acceptable error is no data on non-blocking */
       if (!blockflag && !dlp_noblockcheck ())
@@ -532,7 +522,7 @@ int
 dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
 {
   int bytesread = 0;
-  int headerlen;
+  size_t headerlen;
   char *cbuffer = buffer;
 
   if (!dlconn || !buffer)

@@ -82,7 +82,7 @@ dl_strncpclean (char *dest, const char *source, int length)
 int
 dl_addtostring (char **string, char *add, char *delim, int maxlen)
 {
-  int length;
+  size_t length;
   char *ptr;
 
   if (!string || !add)

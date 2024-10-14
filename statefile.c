@@ -59,11 +59,16 @@ dl_savestate (DLCP *dlconn, const char *statefile)
   dl_log_r (dlconn, 1, 2, "saving connection state to state file\n");
 
   /* Write state information: <server address> <packet ID> <packet time> */
-  linelen = snprintf (line, sizeof (line), "%s %lld %lld\n",
-                      dlconn->addr, (long long int)dlconn->pktid,
-                      (long long int)dlconn->pkttime);
+  linelen = snprintf (line, sizeof (line), "%s %" PRIu64 " %" PRId64 "\n",
+                      dlconn->addr, dlconn->pktid, dlconn->pkttime);
 
-  if (write (statefd, line, linelen) != linelen)
+  if (linelen >= sizeof (line))
+  {
+    dl_log_r (dlconn, 2, 0, "state line too long for buffer\n");
+    return -1;
+  }
+
+  if (write (statefd, line, (size_t)linelen) != linelen)
   {
     dl_log_r (dlconn, 2, 0, "cannot write to state file, %s\n", strerror (errno));
     return -1;
@@ -124,12 +129,12 @@ dl_recoverstate (DLCP *dlconn, const char *statefile)
   /* Loop through lines in the file and find the matching server address */
   while ((dl_readline (statefd, line, sizeof (line))) >= 0)
   {
-    long long int spktid;
-    long long int spkttime;
+    uint64_t spktid;
+    int64_t spkttime;
 
     addrstr[0] = '\0';
 
-    fields = sscanf (line, "%s %lld %lld\n", addrstr, &spktid, &spkttime);
+    fields = sscanf (line, "%s %" SCNu64 " %" SCNd64 "\n", addrstr, &spktid, &spkttime);
 
     if (fields < 0)
       continue;
