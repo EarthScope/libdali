@@ -28,6 +28,8 @@
 #include "libdali.h"
 #include "portable.h"
 
+#define GIBIBYTE (1024ul * 1024ul * 1024ul)
+
 /***********************************************************************/ /**
  * @brief Create a new DataLink Connection Parameter (DLCP) structure
  *
@@ -105,11 +107,11 @@ dl_freedlcp (DLCP *dlconn)
 int
 dl_exchangeIDs (DLCP *dlconn, int parseresp)
 {
-  char sendstr[255]; /* Buffer for command strings */
-  char respstr[255]; /* Buffer for server response */
+  char sendstr[256]; /* Buffer for command strings */
+  char respstr[256]; /* Buffer for server response */
   char *capptr;      /* Pointer to capabilities flags */
   int respsize;
-  int ret = 0;
+  int rv;
 
   if (!dlconn)
     return -1;
@@ -190,9 +192,9 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
       if ((tptr = strstr (capptr, "DLPROTO")))
       {
         /* Parse protocol version as a float */
-        ret = sscanf (tptr, "DLPROTO:%f", &dlconn->serverproto);
+        rv = sscanf (tptr, "DLPROTO:%f", &dlconn->serverproto);
 
-        if (ret != 1)
+        if (rv != 1)
           dl_log_r (dlconn, 1, 1,
                     "[%s] %s(): could not parse protocol version from DLPROTO flag: %s\n",
                     dlconn->addr, __func__, tptr);
@@ -202,9 +204,9 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
       if ((tptr = strstr (capptr, "PACKETSIZE")))
       {
         /* Parse protocol version as an integer */
-        ret = sscanf (tptr, "PACKETSIZE:%" SCNu32, &dlconn->maxpktsize);
+        rv = sscanf (tptr, "PACKETSIZE:%" SCNu32, &dlconn->maxpktsize);
 
-        if (ret != 1)
+        if (rv != 1)
           dl_log_r (dlconn, 1, 1,
                     "[%s] %s(): could not parse packet size from PACKETSIZE flag: %s\n",
                     dlconn->addr, __func__, tptr);
@@ -246,8 +248,8 @@ uint64_t
 dl_position (DLCP *dlconn, uint64_t pktid, dltime_t pkttime)
 {
   uint64_t replyvalue = 0;
-  char reply[255];
-  char header[255];
+  char header[256];
+  char reply[256] = {0};
   int headerlen;
   int replylen;
   int rv;
@@ -341,8 +343,8 @@ uint64_t
 dl_position_after (DLCP *dlconn, dltime_t datatime)
 {
   uint64_t replyvalue = 0;
-  char reply[255];
-  char header[255];
+  char header[256];
+  char reply[256] = {0};
   int headerlen;
   int replylen;
   int rv;
@@ -362,8 +364,8 @@ dl_position_after (DLCP *dlconn, dltime_t datatime)
   }
 
   /* Create packet header with command: "POSITION AFTER datatime" */
-  headerlen = snprintf (header, sizeof (header), "POSITION AFTER %lld",
-                        (long long int)datatime);
+  headerlen = snprintf (header, sizeof (header), "POSITION AFTER %" PRId64,
+                        datatime);
 
   if (headerlen <= 0)
   {
@@ -419,8 +421,8 @@ int64_t
 dl_match (DLCP *dlconn, const char *matchpattern)
 {
   uint64_t replyvalue = 0;
-  char reply[255];
-  char header[255];
+  char header[256];
+  char reply[256] = {0};
   size_t patternlen;
   int headerlen;
   int replylen;
@@ -495,8 +497,8 @@ int64_t
 dl_reject (DLCP *dlconn, const char *rejectpattern)
 {
   uint64_t replyvalue = 0;
-  char reply[255];
-  char header[255];
+  char header[256];
+  char reply[256] = {0};
   size_t patternlen;
   int headerlen;
   int replylen;
@@ -519,8 +521,7 @@ dl_reject (DLCP *dlconn, const char *rejectpattern)
   patternlen = (rejectpattern) ? strlen (rejectpattern) : 0;
 
   /* Create packet header with command: "REJECT size" */
-  headerlen = snprintf (header, sizeof (header), "REJECT %ld",
-                        patternlen);
+  headerlen = snprintf (header, sizeof (header), "REJECT %zu", patternlen);
 
   if (headerlen <= 0)
   {
@@ -580,9 +581,9 @@ dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
           dltime_t datastart, dltime_t dataend, int ack)
 {
   uint64_t replyvalue = 0;
-  char reply[255];
-  char header[255];
-  char *flags = (ack) ? "A" : "N";
+  char header[256];
+  char reply[256] = {0};
+  char *flags     = (ack) ? "A" : "N";
   int headerlen;
   int replylen;
   int rv;
@@ -692,9 +693,9 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
          size_t maxdatasize)
 {
   char *discard;
-  char header[255];
+  char header[256];
   int headerlen;
-  int rv = 0;
+  int rv;
 
   uint64_t spktid;
   int64_t spkttime;
@@ -717,7 +718,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
   }
 
   /* Create packet header with command: "READ pktid" */
-  headerlen = snprintf (header, sizeof (header), "READ %lld", (long long int)pktid);
+  headerlen = snprintf (header, sizeof (header), "READ %" PRIu64, pktid);
 
   if (headerlen <= 0)
   {
@@ -768,7 +769,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     if (packet->datasize > maxdatasize)
     {
       dl_log_r (dlconn, 2, 0,
-                "[%s] %s(): packet data larger (%" PRIu32 ") than receiving buffer (%" PRIsize_t ")\n",
+                "[%s] %s(): packet data larger (%" PRIu32 ") than receiving buffer (%zu)\n",
                 dlconn->addr, __func__, packet->datasize, maxdatasize);
 
       /* Allocate temporary buffer */
@@ -840,9 +841,12 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
  *
  * If @a maxinfosize argument is 0 memory will be allocated as needed
  * for the INFO data result and the infodata pointer will be set to
- * this new buffer; it is up to the caller to free this memory.  If an
- * infomatch string is supplied it will be appended to the INFO
- * request sent to the server.
+ * this new buffer; it is up to the caller to free this memory.  A hard
+ * limit of 1 GiB is placed on the maximum size of the INFO data to allocate.
+ *
+ * If an infomatch string is supplied it will be appended to the INFO
+ * request sent to the server and used to filter the INFO response.
+ * Details of what is match depende on the INFO type requested.
  *
  * @param dlconn DataLink Connection Parameters
  * @param infotype The INFO type to request
@@ -857,11 +861,11 @@ int
 dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
             char **infodata, size_t maxinfosize)
 {
-  char header[255];
-  char type[255];
+  char header[256];
+  char type[256] = {0};
   int headerlen;
-  uint64_t infosize = 0;
-  int rv            = 0;
+  size_t infosize = 0;
+  int rv;
 
   if (!dlconn || !infotype || !infodata)
     return -1;
@@ -913,7 +917,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
   if (!strncmp (header, "INFO", 4))
   {
     /* Parse INFO header */
-    rv = sscanf (header, "INFO %s %" SCNu64, type, &infosize);
+    rv = sscanf (header, "INFO %255s %zu", type, &infosize);
 
     if (rv != 2)
     {
@@ -932,7 +936,7 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
     /* If a maximum buffer size was specified check that it's large enough */
     if (maxinfosize && infosize > maxinfosize)
     {
-      dl_log_r (dlconn, 2, 0, "[%s] %s(): INFO data larger (%" PRIu64 ") than the maximum size (%" PRIsize_t ")\n",
+      dl_log_r (dlconn, 2, 0, "[%s] %s(): INFO data larger (%zu) than the maximum size (%zu)\n",
                 dlconn->addr, __func__, infosize, maxinfosize);
       return -1;
     }
@@ -940,9 +944,16 @@ dl_getinfo (DLCP *dlconn, const char *infotype, char *infomatch,
     /* Allocate the infobuffer if needed */
     if (maxinfosize == 0)
     {
+      if (infosize > GIBIBYTE)
+      {
+        dl_log_r (dlconn, 2, 0, "[%s] %s(): INFO data size (%zu) exceeds 1 GiB allocation limit\n",
+                  dlconn->addr, __func__, infosize);
+        return -1;
+      }
+
       if (!(*infodata = malloc (infosize)))
       {
-        dl_log_r (dlconn, 2, 0, "[%s] %s(): error allocating receving buffer of %" PRIu64 " bytes\n",
+        dl_log_r (dlconn, 2, 0, "[%s] %s(): error allocating receving buffer of %zu bytes\n",
                   dlconn->addr, __func__, infosize);
         return -1;
       }
@@ -1009,7 +1020,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
             size_t maxdatasize, int8_t endflag)
 {
   dltime_t now;
-  char header[255];
+  char header[256];
   int headerlen;
   int rv;
 
@@ -1167,7 +1178,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
           if (packet->datasize > maxdatasize)
           {
             dl_log_r (dlconn, 2, 0,
-                      "[%s] %s(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
+                      "[%s] %s(): packet data larger (%d) than receiving buffer (%zu)\n",
                       dlconn->addr, __func__, packet->datasize, maxdatasize);
             return DLERROR;
           }
@@ -1270,7 +1281,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
                size_t maxdatasize, int8_t endflag)
 {
   dltime_t now;
-  char header[255];
+  char header[256];
   int headerlen;
   int rv;
 
@@ -1407,7 +1418,7 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
       if (packet->datasize > (int64_t)maxdatasize)
       {
         dl_log_r (dlconn, 2, 0,
-                  "[%s] %s(): packet data larger (%d) than receiving buffer (%" PRIsize_t ")\n",
+                  "[%s] %s(): packet data larger (%d) than receiving buffer (%zu)\n",
                   dlconn->addr, __func__, packet->datasize, maxdatasize);
         return DLERROR;
       }

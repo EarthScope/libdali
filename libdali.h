@@ -120,7 +120,7 @@ extern "C" {
 #define LIBDALI_PKTID_NEXT     (UINT64_MAX - 4)
 #define LIBDALI_PKTID_MAXIMUM  (UINT64_MAX - 10)
 
-/** Maximium stream ID string length */
+/** Maximum stream ID string length */
 #define MAXSTREAMID 60
 
 /* Return values for dl_collect() and dl_collect_nb() */
