@@ -31,7 +31,7 @@ extern "C" {
 #define LIBDALI_VERSION "2.0.0"      /**< libdali version */
 #define LIBDALI_RELEASE "2024.288"   /**< libdali release date */
 
-/** @defgroup connection Connection managment functions */
+/** @defgroup connection Connection management functions */
 /** @defgroup network Connection network functions */
 /** @defgroup time-related Time definitions and functions */
 /** @defgroup logging Central Logging */
@@ -45,52 +45,24 @@ extern "C" {
 #include <string.h>
 #include <ctype.h>
 
-/** @def PRIsize_t
-    @brief A printf() macro for portably printing size_t values */
-#define PRIsize_t "zu"
-
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   #define DLP_WIN 1
 #endif
 
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#error "This version of libdali requires Visual Studio 2015 or later."
+#endif
+
 /* Set platform specific features, Windows, Solaris, then everything else */
 #if defined(DLP_WIN)
+  #include <inttypes.h>
   #include <winsock2.h>
   #include <ws2tcpip.h>
   #include <windows.h>
   #include <process.h>
   #include <io.h>
 
-  /* Re-define print conversion for size_t values */
-  #undef PRIsize_t
-  #if defined(WIN64) || defined(_WIN64)
-    #define PRIsize_t "I64u"
-  #else
-    #define PRIsize_t "I32u"
-  #endif
-
-  /* For MSVC 2012 and earlier define standard int types, otherwise use inttypes.h */
-  #if defined(_MSC_VER) && _MSC_VER <= 1700
-    typedef signed char int8_t;
-    typedef unsigned char uint8_t;
-    typedef signed short int int16_t;
-    typedef unsigned short int uint16_t;
-    typedef signed int int32_t;
-    typedef unsigned int uint32_t;
-    typedef signed __int64 int64_t;
-    typedef unsigned __int64 uint64_t;
-  #else
-    #include <inttypes.h>
-  #endif
-
   #if defined(_MSC_VER)
-    #if !defined(PRId64)
-      #define PRId64 "I64d"
-    #endif
-    #if !defined(SCNd64)
-      #define SCNd64 "I64d"
-    #endif
-
     #define strdup _strdup
     #define read _read
     #define write _write
