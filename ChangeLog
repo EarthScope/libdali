@@ -1,6 +1,11 @@
 2024.228:
 	- Change internal packet ID values to uint64_t.
+	- Add LIBDALI_PKTID_MAXIMUM defining the maximum packet ID usable
+	by the library.  This value is very close to the maximum packet
+	ID value allowed in the protocol (max of unsigned 64-bit integer)
+	above which is highly unlikely to be used.
 	- Add special packet ID values, e.g. LIBDALI_PKTID_ERROR, etc.
+	- Add dl_write_id() API to issue the WRITE command with a packed ID.
 	- Remove unused dl_strparse().
 	- Remove support for legacy MS Visual Studio versions older than 2015.
 

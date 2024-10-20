@@ -254,6 +254,9 @@ extern int64_t  dl_reject (DLCP *dlconn, const char *rejectpattern);
 extern uint64_t dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
                            dltime_t datastart, dltime_t dataend, int ack);
 
+extern uint64_t dl_write_id (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
+                             dltime_t datastart, dltime_t dataend, uint64_t pktid, int ack);
+
 extern int   dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet,
                       void *packetdata, size_t maxdatasize);
 

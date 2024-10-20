@@ -580,10 +580,36 @@ uint64_t
 dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
           dltime_t datastart, dltime_t dataend, int ack)
 {
+  return dl_write_id (dlconn, packet, packetlen, streamid,
+                      datastart, dataend, LIBDALI_PKTID_NONE, ack);
+} /* End of dl_write() */
+
+/***********************************************************************/ /**
+ * @brief Send a packet to the DataLink server with a specific packet ID
+ *
+ * Extended version of dl_write() that allows the user to specify the
+ * packet ID to assign to the packet using the @a pktid parameter.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param packet Packet data buffer to send
+ * @param packetlen Length of data in bytes to send from @a packet
+ * @param streamid Stream ID of packet
+ * @param pktid Packet ID to assign to packet (LIBDALI_PKTID_NONE for server assigned)
+ * @param datastart Data start time for packet
+ * @param dataend Data end time for packet
+ * @param ack Acknowledgement flag, if true request acknowledgement
+ *
+ * @retval LIBDALI_PKTID_ERROR on error
+ * @retval 0 on success when no acknowledgement is requested
+ * @retval >=0 on success when acknowledgement is requested
+ ***************************************************************************/
+uint64_t
+dl_write_id (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
+             dltime_t datastart, dltime_t dataend, uint64_t pktid, int ack)
+{
   uint64_t replyvalue = 0;
   char header[256];
   char reply[256] = {0};
-  char *flags     = (ack) ? "A" : "N";
   int headerlen;
   int replylen;
   int rv;
@@ -613,16 +639,44 @@ dl_write (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
   /* Sanity check that packet data is not larger than max packet size if known */
   if (dlconn->maxpktsize > 0 && packetlen > dlconn->maxpktsize)
   {
-    dl_log_r (dlconn, 1, 1, "[%s] %s(): Packet length (%zu) greater than max packet size (%u)\n",
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): Packet length (%zu) greater than max packet size (%u)\n",
               dlconn->addr, __func__, packetlen, dlconn->maxpktsize);
     return LIBDALI_PKTID_ERROR;
   }
 
-  /* Create packet header with command: "WRITE streamid hpdatastart hpdataend flags size" */
-  headerlen = snprintf (header, sizeof (header),
-                        "WRITE %s %" PRId64 " %" PRId64 " %s %zu",
-                        streamid, datastart, dataend,
-                        flags, packetlen);
+  if (pktid > LIBDALI_PKTID_MAXIMUM && pktid != LIBDALI_PKTID_NONE)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): Invalid packet ID: %" PRIu64 ", maximum possible value is %" PRIu64 "\n",
+              dlconn->addr, __func__, pktid, LIBDALI_PKTID_MAXIMUM);
+    return LIBDALI_PKTID_ERROR;
+  }
+
+  /* Configure flags and create packet header
+   *
+   * Single character flags are as follows:
+   * 'N' = no acknowledgement from server
+   * 'A' = acknowledgement requested from server and expected
+   * 'I' = ID submitted with packet */
+  if (pktid == LIBDALI_PKTID_NONE)
+  {
+    char *flags = (ack) ? "A" : "N";
+
+    /* Without packet ID: "WRITE streamid hpdatastart hpdataend flags size" */
+    headerlen = snprintf (header, sizeof (header),
+                          "WRITE %s %" PRId64 " %" PRId64 " %s %zu",
+                          streamid, datastart, dataend,
+                          flags, packetlen);
+  }
+  else
+  {
+    char *flags = (ack) ? "IA" : "IN";
+
+    /* With packet ID: "WRITE streamid hpdatastart hpdataend flags size pktid" */
+    headerlen = snprintf (header, sizeof (header),
+                          "WRITE %s %" PRId64 " %" PRId64 " %s %zu %" PRIu64,
+                          streamid, datastart, dataend,
+                          flags, packetlen, pktid);
+  }
 
   if (headerlen <= 0)
   {
