@@ -311,13 +311,13 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
  * @param resplen Length of response buffer
  *
  * @return number of bytes of response received
- * @retval 0 on success and @a respbuf is NULL
+ * @retval 0 on success and @a respbuf is NULL (response not requested)
  * @retval -1 on error
  ***************************************************************************/
 int
 dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
                void *databuf, size_t datalen,
-               void *respbuf, size_t resplen)
+               char *respbuf, size_t resplen)
 {
   int bytesread = 0; /* bytes read into resp buffer */
   uint8_t wirepacket[MAXPACKETSIZE];
@@ -519,11 +519,10 @@ dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag)
  * @retval -2 on error.
  ***************************************************************************/
 int
-dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
+dl_recvheader (DLCP *dlconn, char *buffer, size_t buflen, uint8_t blockflag)
 {
   int bytesread = 0;
   size_t headerlen;
-  char *cbuffer = buffer;
 
   if (!dlconn || !buffer)
   {
@@ -548,7 +547,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
   }
 
   /* Test synchronization bytes */
-  if (cbuffer[0] != 'D' || cbuffer[1] != 'L')
+  if (buffer[0] != 'D' || buffer[1] != 'L')
   {
     dl_log_r (dlconn, 2, 0, "[%s] No DataLink packet detected\n",
               dlconn->addr);
@@ -556,7 +555,7 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
   }
 
   /* 3rd byte is the header length */
-  headerlen = (uint8_t)cbuffer[2];
+  headerlen = (uint8_t)buffer[2];
 
   /* Receive header payload blocking until completely received */
   if ((bytesread = dl_recvdata (dlconn, buffer, headerlen, 1)) != headerlen)
@@ -570,9 +569,9 @@ dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag)
 
   /* Make sure reply is NULL terminated */
   if (bytesread == (int64_t)buflen)
-    cbuffer[bytesread - 1] = '\0';
+    buffer[bytesread - 1] = '\0';
   else
-    cbuffer[bytesread] = '\0';
+    buffer[bytesread] = '\0';
 
   return bytesread;
 } /* End of dl_recvheader() */

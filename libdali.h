@@ -28,7 +28,7 @@
 extern "C" {
 #endif
 
-#define LIBDALI_VERSION "2.0.0"      /**< libdali version */
+#define LIBDALI_VERSION "2.0.0DEV"   /**< libdali version */
 #define LIBDALI_RELEASE "2024.288"   /**< libdali release date */
 
 /** @defgroup connection Connection management functions */
@@ -266,7 +266,7 @@ extern int   dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
                          size_t maxdatasize, int8_t endflag);
 extern int   dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
                             size_t maxdatasize, int8_t endflag);
-extern int   dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value);
+extern int   dl_handlereply (DLCP *dlconn, char *buffer, size_t buflen, uint64_t *value);
 extern void  dl_terminate (DLCP *dlconn);
 extern char *dl_read_streamlist (DLCP *dlconn, const char *streamfile);
 extern int   dl_recoverstate (DLCP *dlconn, const char *statefile);
@@ -283,9 +283,9 @@ extern void   dl_disconnect (DLCP *dlconn);
 extern int    dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen);
 extern int    dl_sendpacket (DLCP *dlconn, void *headerbuf, size_t headerlen,
                              void *databuf, size_t datalen,
-                             void *respbuf, size_t resplen);
+                             char *respbuf, size_t resplen);
 extern int    dl_recvdata (DLCP *dlconn, void *buffer, size_t readlen, uint8_t blockflag);
-extern int    dl_recvheader (DLCP *dlconn, void *buffer, size_t buflen, uint8_t blockflag);
+extern int    dl_recvheader (DLCP *dlconn, char *buffer, size_t buflen, uint8_t blockflag);
 /** @} */
 
 /** @addtogroup logging

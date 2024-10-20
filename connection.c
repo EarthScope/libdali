@@ -739,14 +739,15 @@ dl_write_id (DLCP *dlconn, void *packet, size_t packetlen, char *streamid,
  * @param packetdata Pointer to a buffer for received packet data
  * @param maxdatasize Maximum data size to write to @a packetdata
  *
- * @return Number of bytes of packet data received on success and -1
- * on error.
+ * @retval >0 Number of bytes of packet data received on success
+ * @retval 0 on success and packet data is larger than @a maxdatasize
+ * @retval -1 on error
  ***************************************************************************/
 int
 dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
          size_t maxdatasize)
 {
-  char *discard;
+  char *discard = NULL;
   char header[256];
   int headerlen;
   int rv;
@@ -802,7 +803,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
   if (!strncmp (header, "PACKET", 6))
   {
     /* Parse PACKET header */
-    rv = sscanf (header, "PACKET %s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
+    rv = sscanf (header, "PACKET %59s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
                  packet->streamid, &spktid, &spkttime,
                  &sdatastart, &sdataend, &sdatasize);
 
@@ -845,8 +846,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
         return -1;
       }
 
-      if (discard)
-        free (discard);
+      free (discard);
 
       return 0;
     }
@@ -871,7 +871,7 @@ dl_read (DLCP *dlconn, uint64_t pktid, DLPacket *packet, void *packetdata,
     rv = dl_handlereply (dlconn, header, sizeof (header), NULL);
 
     /* Log server reply message */
-    if (rv >= 0)
+    if (rv > 0)
       dl_log_r (dlconn, 2, 0, "[%s] %s\n", dlconn->addr, header);
 
     return -1;
@@ -1212,7 +1212,7 @@ dl_collect (DLCP *dlconn, DLPacket *packet, void *packetdata,
         if (!strncmp (header, "PACKET", 6))
         {
           /* Parse PACKET header */
-          rv = sscanf (header, "PACKET %s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
+          rv = sscanf (header, "PACKET %59s %" SCNu64 " %" SCNd64 " %" SCNd64 " %" SCNd64 " %" SCNu32,
                        packet->streamid, &spktid, &spkttime,
                        &sdatastart, &sdataend, &sdatasize);
 
@@ -1553,10 +1553,9 @@ dl_collect_nb (DLCP *dlconn, DLPacket *packet, void *packetdata,
  * @retval 1 "ERROR" received
  ***************************************************************************/
 int
-dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value)
+dl_handlereply (DLCP *dlconn, char *buffer, size_t buflen, uint64_t *value)
 {
   char status[11];
-  char *cbuffer = buffer;
   uint64_t pvalue;
   uint64_t size = 0;
   int rv        = 0;
@@ -1565,7 +1564,7 @@ dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value)
     return -1;
 
   /* Make sure buffer if terminated */
-  cbuffer[buflen] = '\0';
+  buffer[buflen - 1] = '\0';
 
   /* Parse reply header */
   if (sscanf (buffer, "%10s %" SCNu64 " %" SCNu64, status, &pvalue, &size) != 3)
@@ -1601,14 +1600,14 @@ dl_handlereply (DLCP *dlconn, void *buffer, size_t buflen, uint64_t *value)
     }
 
     if (size < buflen)
-      cbuffer[size] = '\0';
+      buffer[size] = '\0';
     else
-      cbuffer[buflen - 1] = '\0';
+      buffer[buflen - 1] = '\0';
   }
   /* Make sure buffer is terminated */
   else
   {
-    cbuffer[0] = '\0';
+    buffer[0] = '\0';
   }
 
   /* Check for "OK" status in reply header */
