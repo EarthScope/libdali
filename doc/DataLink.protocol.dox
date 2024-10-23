@@ -3,7 +3,7 @@
 
 @tableofcontents
 
-@section title DataLink protocol 1.0 (2008/9/12)
+@section title DataLink protocol 1.1 (2024/10/23)
 
 @subsection general General concepts
 
@@ -94,10 +94,12 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently rejected streams
 
 @subsubsection client-write WRITE
-  \a Syntax: `WRITE streamid hpdatastart hpdataend flags size|<packet data of length size>`
+  \a Syntax: `WRITE streamid hpdatastart hpdataend flags size [pktid]|<packet data of length size>`
 
   \a Purpose: Send data packet to DataLink server
-  - Flags: "N" = no acknowledgement requested, "A" = acknowledgement requested
+  - Flags: "N" = no acknowledgement requested,
+           "A" = acknowledgement requested
+           "I" = packet ID is provided in header
   - Size in the header is the length of the packet data in bytes
   - Reply when acknowledgement requested is OK|ERROR with value of inserted packet ID
 
@@ -168,7 +170,7 @@ followed by a short description of the command.
   packet, using this combination is necessary as packet IDs will
   eventually be reused.
 
-@subsection sequence Example exchange
+@subsection sequence Example exchanges
 
 One of the most common client-server sequences would be a client
 connecting to a server, exchanging IDs, setting a stream matching
@@ -190,5 +192,31 @@ S: PACKET IU_ANMO_00_BHZ/MSEED 3973331 1216097732784300 1216097361789600 1216097
 \endcode
 
 where `C` is the client and `S` is the server.
+
+Another common sequence would be a client connecting to a server to
+submit (write) data packets:
+
+\code
+<client connects to server>
+C: ID slink2dali:opsuser:1682 8:Darwin-24.0.0
+S: ID DataLink 4.0.0 :: DLPROTO:1.0 PACKETSIZE:512 WRITE
+C: WRITE FDSN:XX_STA__B_S_S/MSEED 1729726881094240 1729726881094240 N 512|<miniSEED record>
+C: WRITE FDSN:XX_STA__B_S_S/MSEED 1729726882332543 1729726882332543 N 512|<miniSEED record>
+C: WRITE FDSN:XX_STA__B_S_S/MSEED 1729726882835762 1729726882835762 N 512|<miniSEED record>
+... <more WRITES as desired>
+\endcode
+
+The `WRITE` command can also include a packet ID in the header for the
+server to assign to the packet (if it wishes).  Submitting packet IDs
+with the `WRITE` command is useful to maintain a consistent set of IDs
+across multiple servers.
+
+A header with a packet ID must include the `I` flag in the flags field
+and the suggested packet ID following the packet size field.
+For example, a packet ID of 12345 is included in the following `WRITE`:
+
+\code
+C: WRITE FDSN:XX_STA__B_S_S/MSEED 1729726882835762 1729726882835762 IN 512 12345|<miniSEED record>
+\endcode
 
 **/

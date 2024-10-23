@@ -1,4 +1,8 @@
 2024.228:
+	- Update supported DataLink protocol to 1.1 with additions:
+	  > Allow WRITE command to include an optional flag and field
+	  to specify a packet ID to assign to the packet.
+
 	- Change internal packet ID values to uint64_t.
 	- Add LIBDALI_PKTID_MAXIMUM defining the maximum packet ID usable
 	by the library.  This value is very close to the maximum packet
