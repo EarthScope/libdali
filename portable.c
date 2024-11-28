@@ -185,7 +185,7 @@ dlp_noblockcheck (void)
     return -1;
 
 #else
-  if (errno != EWOULDBLOCK)
+  if (errno != EWOULDBLOCK && errno != EAGAIN)
     return -1;
 
 #endif
