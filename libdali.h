@@ -29,7 +29,7 @@ extern "C" {
 #endif
 
 #define LIBDALI_VERSION "2.0.0DEV"   /**< libdali version */
-#define LIBDALI_RELEASE "2024.288"   /**< libdali release date */
+#define LIBDALI_RELEASE "2025.124"   /**< libdali release date */
 
 /** @defgroup connection Connection management functions */
 /** @defgroup network Connection network functions */
@@ -245,6 +245,8 @@ typedef struct DLPacket_s
 extern DLCP *dl_newdlcp (char *address, char *progname);
 extern void  dl_freedlcp (DLCP *dlconn);
 extern int   dl_exchangeIDs (DLCP *dlconn, int parseresp);
+extern int   dl_auth_userpass (DLCP *slconn, const char *username, const char *password);
+extern int   dl_auth_jwtoken (DLCP *dlconn, const char *jwtoken);
 
 extern uint64_t dl_position (DLCP *dlconn, uint64_t pktid, dltime_t pkttime);
 extern uint64_t dl_position_after (DLCP *dlconn, dltime_t datatime);

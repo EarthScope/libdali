@@ -224,6 +224,165 @@ dl_exchangeIDs (DLCP *dlconn, int parseresp)
 } /* End of dl_exchangeIDs() */
 
 /***********************************************************************/ /**
+ * @brief Authenticate using username and password
+ *
+ * Issue the AUTH USERPASS command to the DataLink server.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param username Username to authenticate with
+ * @param password Password to authenticate with
+ *
+ * @retval  0 successful authentication
+ * @retval  1 on authentication failure
+ * @retval -1 on error
+ ***************************************************************************/
+int
+dl_auth_userpass (DLCP *dlconn, const char *username, const char *password)
+{
+  uint64_t replyvalue = 0;
+  char header[256];
+  char payload[256];
+  char reply[256] = {0};
+  int headerlen;
+  int payloadlen;
+  int replylen;
+  int rv;
+
+  if (!dlconn || !username || !password)
+    return -1;
+
+  if (dlconn->link < 0)
+    return -1;
+
+  /* Sanity check that connection is not in streaming mode */
+  if (dlconn->streaming)
+  {
+    dl_log_r (dlconn, 1, 1, "[%s] %s(): Connection in streaming mode, cannot continue\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Create packet payload with username and password */
+  payloadlen = snprintf (payload, sizeof (payload), "%s\r%s", username, password);
+  if (payloadlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating AUTH USERPASS payload\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Create packet header */
+  headerlen = snprintf (header, sizeof (header), "AUTH USERPASS %d", payloadlen);
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating AUTH USERPASS header\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Send header and payload to server */
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen,
+                            payload, (size_t)payloadlen,
+                            reply, sizeof (reply));
+
+  if (replylen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending AUTH USERPASS command\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof (reply), &replyvalue);
+
+  /* Log server reply message */
+  if (rv >= 0)
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
+
+  if (rv < 0)
+    return -1;
+  else if (rv == 1) /* ERROR response received */
+    return 1;
+  else
+    return 0;
+} /* End of dl_auth_userpass() */
+
+/***********************************************************************/ /**
+ * @brief Authenticate using JSON Web Token
+ *
+ * Issue the AUTH JWT command to the DataLink server.
+ *
+ * @param dlconn DataLink Connection Parameters
+ * @param jwtoekn JSON Web Token to authenticate with
+ *
+ * @retval  0 successful authentication
+ * @retval  1 on authentication failure
+ * @retval -1 on error
+ ***************************************************************************/
+int
+dl_auth_jwtoken (DLCP *dlconn, const char *jwtoken)
+{
+  uint64_t replyvalue = 0;
+  char header[256];
+  char reply[256] = {0};
+  int headerlen;
+  int payloadlen;
+  int replylen;
+  int rv;
+
+  if (!dlconn || !jwtoken)
+    return -1;
+
+  if (dlconn->link < 0)
+    return -1;
+
+  /* Sanity check that connection is not in streaming mode */
+  if (dlconn->streaming)
+  {
+    dl_log_r (dlconn, 1, 1, "[%s] %s(): Connection in streaming mode, cannot continue\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  payloadlen = (int)strlen (jwtoken);
+
+  /* Create packet header */
+  headerlen = snprintf (header, sizeof (header), "AUTH JWT %d", payloadlen);
+  if (headerlen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem creating AUTH JWT header\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Send header and payload to server */
+  replylen = dl_sendpacket (dlconn, header, (size_t)headerlen,
+                            (void *)jwtoken, (size_t)payloadlen,
+                            reply, sizeof (reply));
+
+  if (replylen <= 0)
+  {
+    dl_log_r (dlconn, 2, 0, "[%s] %s(): problem sending AUTH JWT command\n",
+              dlconn->addr, __func__);
+    return -1;
+  }
+
+  /* Reply message, if sent, will be placed into the reply buffer */
+  rv = dl_handlereply (dlconn, reply, sizeof (reply), &replyvalue);
+
+  /* Log server reply message */
+  if (rv >= 0)
+    dl_log_r (dlconn, 1, 1, "[%s] %s\n", dlconn->addr, reply);
+
+  if (rv < 0)
+    return -1;
+  else if (rv == 1) /* ERROR response received */
+    return 1;
+  else
+    return 0;
+} /* End of dl_auth_userpass() */
+
+/***********************************************************************/ /**
  * @brief Position the client read position
  *
  * Set the client read position to a specified packet ID and packet
