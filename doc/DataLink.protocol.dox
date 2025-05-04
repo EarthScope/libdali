@@ -64,15 +64,20 @@ followed by a short description of the command.
   - Reply is header-only formulated as: `ID DataLink <version> :: <capabilities>`
 
 @subsubsection client-auth-userpass AUTH USERPASS
-  \a Syntax: `AUTH USERPASS username password`
+  \a Syntax: `AUTH USERPASS size|username\rpassword`
 
   \a Purpose: Send client authentication as username and password
+  - The username and password are sent in the data section of the DataLink packet
+  - Size in the header is the length of the username and password in bytes
+  - The username and password are separated by carriage return
   - Reply is OK|ERROR with value of 0
 
 @subsubsection client-auth-userpass AUTH JWT
-  \a Syntax: `AUTH JWT token`
+  \a Syntax: `AUTH JWT size|jwt`
 
   \a Purpose: Send client authentication as a JSON Web Token (JWT)
+  - The JWT is sent in the data section of the DataLink packet
+  - Size in the header is the length of the JWT in bytes
   - Reply is OK|ERROR with value of 0
 
 @subsubsection client-position-set POSITION SET
