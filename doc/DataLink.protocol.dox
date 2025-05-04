@@ -57,6 +57,8 @@ upper case letters with required arguments in lower case letters
 followed by a short description of the command.
 
 @subsubsection client-id ID
+  (introduced in 1.0)
+
   \a Syntax: `ID clientid`
 
   \a Purpose: Send client identification and receive server identification
@@ -64,6 +66,8 @@ followed by a short description of the command.
   - Reply is header-only formulated as: `ID DataLink <version> :: <capabilities>`
 
 @subsubsection client-auth-userpass AUTH USERPASS
+  (introduced in 1.1)
+
   \a Syntax: `AUTH USERPASS size|username\rpassword`
 
   \a Purpose: Send client authentication as username and password
@@ -73,6 +77,8 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value of 0
 
 @subsubsection client-auth-userpass AUTH JWT
+  (introduced in 1.1)
+
   \a Syntax: `AUTH JWT size|jwt`
 
   \a Purpose: Send client authentication as a JSON Web Token (JWT)
@@ -81,6 +87,8 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value of 0
 
 @subsubsection client-position-set POSITION SET
+  (introduced in 1.0)
+
   \a Syntax: `POSITION SET pktid uspkttime`
 
   \a Purpose: Set the client read position in the server to a specific packet
@@ -88,12 +96,16 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-position-after POSITION AFTER
+  (introduced in 1.0)
+
   \a Syntax: `POSITION AFTER ustime`
 
   \a Purpose: Set the client read position to first packet with data start time after ustime
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-match MATCH
+  (introduced in 1.0)
+
   \a Syntax: `MATCH size|<match pattern of length size>`
 
   \a Purpose: Set the connection packet matching expression
@@ -102,6 +114,8 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently matched streams
 
 @subsubsection client-reject REJECT
+  (introduced in 1.0)
+
   \a Syntax: `REJECT size|<reject pattern of length size>`
 
   \a Purpose: Set the connection packet rejecting expression
@@ -110,22 +124,28 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently rejected streams
 
 @subsubsection client-write WRITE
+  (introduced in 1.0, extended in 1.1)
+
   \a Syntax: `WRITE streamid usdatastart usdataend flags size [pktid]|<packet data of length size>`
 
   \a Purpose: Send data packet to DataLink server
   - Flags: "N" = no acknowledgement requested,
            "A" = acknowledgement requested
-           "I" = packet ID is provided in header
+           "I" = packet ID is provided in header (new in 1.1)
   - Size in the header is the length of the packet data in bytes
   - Reply when acknowledgement requested is OK|ERROR with value of inserted packet ID
 
 @subsubsection client-read READ
+  (introduced in 1.0)
+
   \a Syntax: `READ pktid`
 
   \a Purpose: Request data packet from DataLink server
   - Reply is either PACKET (DataLink data packet) or ERROR
 
 @subsubsection client-stream STREAM
+  (introduced in 1.0)
+
   \a Syntax: `STREAM`
 
   \a Purpose: Request start of streaming mode
@@ -134,12 +154,16 @@ followed by a short description of the command.
   - No client commands are accepted in streaming mode except ID requests
 
 @subsubsection client-endstream ENDSTREAM
+  (introduced in 1.0)
+
   \a Syntax: `ENDSTREAM`
 
   \a Purpose: Request end of streaming mode, connection returns to query mode
   - Server returns ENDSTREAM when streaming mode has ended
 
 @subsubsection client-info INFO
+  (introduced in 1.0)
+
   \a Syntax: `INFO type|[match]`
 
   \a Purpose: Request an INFO packet from the server
@@ -150,6 +174,8 @@ followed by a short description of the command.
 @subsection server Server responses
 
 @subsubsection server-status OK or ERROR
+  (introduced in 1.0)
+
   \a Syntax: `OK value size|<status message>`
 
   \a Syntax: `ERROR value size|<error message>`
@@ -160,6 +186,8 @@ followed by a short description of the command.
   - Size in the header is the length of the message in bytes
 
 @subsubsection server-info INFO
+  (introduced in 1.0)
+
   \a Syntax: `INFO type size|<XML info data of length size>`
 
   \a Purpose: Return INFO data requested
@@ -168,6 +196,8 @@ followed by a short description of the command.
   - Size in the header is the length of the XML in bytes
 
 @subsubsection server-packet PACKET
+  (introduced in 1.0)
+
   \a Syntax: `PACKET <streamid> <pktid> <uspackettime> <usdatastart> <usdataend> <size>|<packet data of length size>`
 
   \a Purpose: Send data packets to client
