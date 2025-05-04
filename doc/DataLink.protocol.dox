@@ -3,7 +3,7 @@
 
 @tableofcontents
 
-@section title DataLink protocol 1.1 (2024/10/23)
+@section title DataLink protocol 1.1 (2025/05/04)
 
 @subsection general General concepts
 
@@ -22,9 +22,8 @@ ASCII characters with the exception of a single byte length parameter
 (preheader) and packet data.
 
 Various client commands and server responses contain time stamps
-represented as high-precision time values defined as Unix/POSIX epoch
-times in microseconds.  These high-precision time values are
-abbreviated to @a hptime, @a hppkttime, @a hpdatastart or @a hpdataend.
+defined as Unix/POSIX epoch times in microseconds.  These values are
+abbreviated to @a ustime, @a uspkttime, @a usdatastart or @a usdataend.
 
 @subsection packet DataLink packet structure
 
@@ -64,17 +63,29 @@ followed by a short description of the command.
   - Client ID string is: `programname:username:processid:architecture`
   - Reply is header-only formulated as: `ID DataLink <version> :: <capabilities>`
 
+@subsubsection client-auth-userpass AUTH USERPASS
+  \a Syntax: `AUTH USERPASS username password`
+
+  \a Purpose: Send client authentication as username and password
+  - Reply is OK|ERROR with value of 0
+
+@subsubsection client-auth-userpass AUTH JWT
+  \a Syntax: `AUTH JWT token`
+
+  \a Purpose: Send client authentication as a JSON Web Token (JWT)
+  - Reply is OK|ERROR with value of 0
+
 @subsubsection client-position-set POSITION SET
-  \a Syntax: `POSITION SET pktid hppkttime`
+  \a Syntax: `POSITION SET pktid uspkttime`
 
   \a Purpose: Set the client read position in the server to a specific packet
   - As special cases pktid can be "EARLIEST" or "LATEST"
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-position-after POSITION AFTER
-  \a Syntax: `POSITION AFTER hptime`
+  \a Syntax: `POSITION AFTER ustime`
 
-  \a Purpose: Set the client read position to first packet with data start time after hptime
+  \a Purpose: Set the client read position to first packet with data start time after ustime
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-match MATCH
@@ -94,7 +105,7 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently rejected streams
 
 @subsubsection client-write WRITE
-  \a Syntax: `WRITE streamid hpdatastart hpdataend flags size [pktid]|<packet data of length size>`
+  \a Syntax: `WRITE streamid usdatastart usdataend flags size [pktid]|<packet data of length size>`
 
   \a Purpose: Send data packet to DataLink server
   - Flags: "N" = no acknowledgement requested,
@@ -152,7 +163,7 @@ followed by a short description of the command.
   - Size in the header is the length of the XML in bytes
 
 @subsubsection server-packet PACKET
-  \a Syntax: `PACKET <streamid> <pktid> <hppackettime> <hpdatastart> <hpdataend> <size>|<packet data of length size>`
+  \a Syntax: `PACKET <streamid> <pktid> <uspackettime> <usdatastart> <usdataend> <size>|<packet data of length size>`
 
   \a Purpose: Send data packets to client
   - Size in the header is the length of the packet data in bytes
@@ -173,7 +184,7 @@ followed by a short description of the command.
 @subsection sequence Example exchanges
 
 One of the most common client-server sequences would be a client
-connecting to a server, exchanging IDs, setting a stream matching
+connecting to a server, exchanging identifiers, setting a stream matching
 pattern and collecting data in streaming mode.  This is illustrated
 below (the preheaders of the DataLink packets have been omitted for
 clarity):
