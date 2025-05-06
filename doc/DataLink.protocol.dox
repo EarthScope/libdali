@@ -57,7 +57,6 @@ upper case letters with required arguments in lower case letters
 followed by a short description of the command.
 
 @subsubsection client-id ID
-  (introduced in 1.0)
 
   \a Syntax: `ID clientid`
 
@@ -87,7 +86,6 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value of 0
 
 @subsubsection client-position-set POSITION SET
-  (introduced in 1.0)
 
   \a Syntax: `POSITION SET pktid uspkttime`
 
@@ -96,7 +94,6 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-position-after POSITION AFTER
-  (introduced in 1.0)
 
   \a Syntax: `POSITION AFTER ustime`
 
@@ -104,7 +101,6 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as packet ID on success
 
 @subsubsection client-match MATCH
-  (introduced in 1.0)
 
   \a Syntax: `MATCH size|<match pattern of length size>`
 
@@ -114,7 +110,6 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently matched streams
 
 @subsubsection client-reject REJECT
-  (introduced in 1.0)
 
   \a Syntax: `REJECT size|<reject pattern of length size>`
 
@@ -124,19 +119,18 @@ followed by a short description of the command.
   - Reply is OK|ERROR with value as number currently rejected streams
 
 @subsubsection client-write WRITE
-  (introduced in 1.0, extended in 1.1)
+  (extended in 1.1)
 
   \a Syntax: `WRITE streamid usdatastart usdataend flags size [pktid]|<packet data of length size>`
 
   \a Purpose: Send data packet to DataLink server
   - Flags: "N" = no acknowledgement requested,
            "A" = acknowledgement requested
-           "I" = packet ID is provided in header (new in 1.1)
+           "I" = packet ID (pktid) is provided in header (new in 1.1)
   - Size in the header is the length of the packet data in bytes
   - Reply when acknowledgement requested is OK|ERROR with value of inserted packet ID
 
 @subsubsection client-read READ
-  (introduced in 1.0)
 
   \a Syntax: `READ pktid`
 
@@ -144,7 +138,6 @@ followed by a short description of the command.
   - Reply is either PACKET (DataLink data packet) or ERROR
 
 @subsubsection client-stream STREAM
-  (introduced in 1.0)
 
   \a Syntax: `STREAM`
 
@@ -154,7 +147,6 @@ followed by a short description of the command.
   - No client commands are accepted in streaming mode except ID requests
 
 @subsubsection client-endstream ENDSTREAM
-  (introduced in 1.0)
 
   \a Syntax: `ENDSTREAM`
 
@@ -162,7 +154,6 @@ followed by a short description of the command.
   - Server returns ENDSTREAM when streaming mode has ended
 
 @subsubsection client-info INFO
-  (introduced in 1.0)
 
   \a Syntax: `INFO type|[match]`
 
@@ -174,7 +165,6 @@ followed by a short description of the command.
 @subsection server Server responses
 
 @subsubsection server-status OK or ERROR
-  (introduced in 1.0)
 
   \a Syntax: `OK value size|<status message>`
 
@@ -186,7 +176,6 @@ followed by a short description of the command.
   - Size in the header is the length of the message in bytes
 
 @subsubsection server-info INFO
-  (introduced in 1.0)
 
   \a Syntax: `INFO type size|<XML info data of length size>`
 
@@ -196,7 +185,6 @@ followed by a short description of the command.
   - Size in the header is the length of the XML in bytes
 
 @subsubsection server-packet PACKET
-  (introduced in 1.0)
 
   \a Syntax: `PACKET <streamid> <pktid> <uspackettime> <usdatastart> <usdataend> <size>|<packet data of length size>`
 
