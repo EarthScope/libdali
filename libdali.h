@@ -47,7 +47,9 @@ extern "C" {
 
 /** @def PRIsize_t
     @brief A printf() macro for portably printing size_t values */
+#ifndef PRIsize_t /* libmseed.h defines it too */
 #define PRIsize_t "zu"
+#endif
 
 #if defined(WIN32) || defined(_WIN32) || defined(WIN64) || defined(_WIN64)
   #define DLP_WIN 1

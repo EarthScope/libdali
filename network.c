@@ -201,6 +201,7 @@ dl_connect (DLCP *dlconn)
   if (dl_exchangeIDs (dlconn, 1) == -1)
   {
     dlp_sockclose (sock);
+    dlconn->link = -1;
     return -1;
   }
 
@@ -271,7 +272,7 @@ dl_senddata (DLCP *dlconn, void *buffer, size_t sendlen)
   /* Send data */
   if (send (dlconn->link, buffer, sendlen, 0) != (int64_t)sendlen)
   {
-    dl_log_r (dlconn, 2, 0, "[%s] error sending data\n", dlconn->addr);
+    dl_log_r (dlconn, 2, 0, "[%s] error sending data: %s\n", dlconn->addr, dlp_strerror ());
     return -1;
   }
 
